@@ -1,0 +1,32 @@
+# Dependências
+node_modules/
+
+# Ambiente
+.env
+
+
+# Build
+dist/
+
+# Logs
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.log
+
+# Lock files
+package-lock.json
+yarn.lock
+
+# TypeScript
+*.tsbuildinfo
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
