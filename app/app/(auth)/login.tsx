@@ -14,6 +14,7 @@ import {
 import { api } from '../../services/api';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Colors } from '../../constants/colors';
+import { PasswordInput } from '../../components/ui/PasswordInput';
 
 type Modo = 'login' | 'cadastro';
 
@@ -142,34 +143,24 @@ export default function LoginScreen() {
             />
           </View>
 
-          <View style={styles.campo}>
-            <Text style={styles.label}>Senha</Text>
-            <TextInput
-              style={styles.input}
-              placeholder={modo === 'cadastro' ? 'Minimo 6 caracteres' : 'Sua senha'}
-              placeholderTextColor="#9CA3AF"
-              value={senha}
-              onChangeText={setSenha}
-              secureTextEntry
-              returnKeyType={modo === 'cadastro' ? 'next' : 'done'}
-              onSubmitEditing={modo === 'login' ? handleSubmit : undefined}
-            />
-          </View>
+          <PasswordInput
+            label="Senha"
+            placeholder={modo === 'cadastro' ? 'Minimo 6 caracteres' : 'Sua senha'}
+            value={senha}
+            onChangeText={setSenha}
+            returnKeyType={modo === 'cadastro' ? 'next' : 'done'}
+            onSubmitEditing={modo === 'login' ? handleSubmit : undefined}
+          />
 
           {modo === 'cadastro' && (
-            <View style={styles.campo}>
-              <Text style={styles.label}>Confirmar senha</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Repita a senha"
-                placeholderTextColor="#9CA3AF"
-                value={confirmarSenha}
-                onChangeText={setConfirmarSenha}
-                secureTextEntry
-                returnKeyType="done"
-                onSubmitEditing={handleSubmit}
-              />
-            </View>
+            <PasswordInput
+              label="Confirmar senha"
+              placeholder="Repita a senha"
+              value={confirmarSenha}
+              onChangeText={setConfirmarSenha}
+              returnKeyType="done"
+              onSubmitEditing={handleSubmit}
+            />
           )}
 
           {erro !== '' && <Text style={styles.erro}>{erro}</Text>}
