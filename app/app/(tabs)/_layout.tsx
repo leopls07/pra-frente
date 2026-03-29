@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
@@ -15,7 +15,12 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: Colors.primary,
         tabBarInactiveTintColor: Colors.textMuted,
-        tabBarStyle: { backgroundColor: Colors.card, paddingBottom: 4 },
+        tabBarStyle: {
+          backgroundColor: Colors.background,
+          paddingBottom: 4,
+          borderTopWidth: 1,
+          borderTopColor: Colors.border,
+        },
       }}
     >
       <Tabs.Screen
@@ -39,7 +44,13 @@ export default function TabsLayout() {
         options={{
           title: 'Combustível',
           tabBarLabel: 'Combustível',
-          tabBarIcon: ({ focused }) => icon(focused, 'water', 'water-outline'),
+          tabBarIcon: ({ focused }) => (
+            <MaterialCommunityIcons
+              name="gas-station-outline"
+              size={24}
+              color={focused ? Colors.primary : Colors.textMuted}
+            />
+          ),
         }}
       />
       <Tabs.Screen

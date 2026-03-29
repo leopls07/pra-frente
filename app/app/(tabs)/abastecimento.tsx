@@ -14,10 +14,14 @@ import Toast from 'react-native-toast-message';
 import { api } from '../../services/api';
 import { TipoCombustivel } from '../../types';
 import { Colors } from '../../constants/colors';
+import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-const COMBUSTIVEIS: { valor: TipoCombustivel; label: string; emoji: string }[] = [
-  { valor: 'gasolina', label: 'Gasolina', emoji: '🔴' },
-  { valor: 'etanol', label: 'Etanol', emoji: '🟢' },
+type McIcon = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+
+const COMBUSTIVEIS: { valor: TipoCombustivel; label: string; icone: McIcon }[] = [
+  { valor: 'gasolina', label: 'Gasolina', icone: 'fire' },
+  { valor: 'etanol', label: 'Etanol', icone: 'leaf' },
 ];
 
 function formatarDataHora(date: Date): string {
@@ -101,12 +105,13 @@ export default function AbastecimentoScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.headerArea}>
-        <Text style={styles.titulo}>Abastecimento</Text>
-      </View>
+    <LinearGradient colors={[Colors.primary, Colors.background]} style={styles.gradient}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        <View style={styles.headerArea}>
+          <Text style={styles.titulo}>Abastecimento</Text>
+        </View>
 
-      <View style={styles.form}>
+        <View style={styles.form}>
       <View style={styles.grupo}>
         <Text style={styles.label}>Valor pago</Text>
         <TextInput
@@ -136,7 +141,11 @@ export default function AbastecimentoScreen() {
               accessibilityRole="radio"
               accessibilityState={{ selected: tipoCombustivel === c.valor }}
             >
-              <Text style={styles.combustivelEmoji}>{c.emoji}</Text>
+              <MaterialCommunityIcons
+                name={c.icone}
+                size={26}
+                color={tipoCombustivel === c.valor ? Colors.primary : Colors.textSecondary}
+              />
               <Text
                 style={[
                   styles.combustivelLabel,
@@ -160,7 +169,7 @@ export default function AbastecimentoScreen() {
           accessibilityRole="button"
         >
           <Text style={styles.inputDataTexto}>{formatarDataHora(data)}</Text>
-          <Text style={styles.inputDataIcone}>📅</Text>
+          <MaterialCommunityIcons name="calendar-month" size={28} color={Colors.primaryDisabled} />
         </TouchableOpacity>
 
         {showPicker && (
@@ -188,24 +197,31 @@ export default function AbastecimentoScreen() {
           {salvando ? 'Registrando...' : 'Registrar Abastecimento'}
         </Text>
       </TouchableOpacity>
-      </View>
-    </ScrollView>
+        </View>
+      </ScrollView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  content: { paddingBottom: 32 },
+  gradient: { flex: 1 },
+  container: { flex: 1 },
+  content: { flexGrow: 1 },
   headerArea: {
-    backgroundColor: Colors.primary,
     paddingTop: 56,
     paddingHorizontal: 24,
     paddingBottom: 24,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    marginBottom: 8,
   },
-  form: { padding: 24, gap: 24 },
+  form: {
+    padding: 20,
+    gap: 24,
+    backgroundColor: Colors.card,
+    borderRadius: 16,
+    width: '95%',
+    alignSelf: 'center',
+    flex: 1,
+    marginBottom: 16,
+  },
   titulo: { fontSize: 28, fontWeight: 'bold', color: Colors.text },
   grupo: { gap: 8 },
   label: { fontSize: 16, fontWeight: '600', color: Colors.label },
@@ -233,7 +249,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   botaoCombustivelSelecionado: { borderColor: Colors.primary, backgroundColor: Colors.selectedBg },
-  combustivelEmoji: { fontSize: 24 },
+
   combustivelLabel: { fontSize: 15, fontWeight: '600', color: Colors.textSecondary },
   combustivelLabelSelecionado: { color: Colors.primary },
   inputData: {
@@ -250,7 +266,7 @@ const styles = StyleSheet.create({
   inputDataTexto: { fontSize: 18, color: Colors.text, fontWeight: '500' },
   inputDataIcone: { fontSize: 20 },
   botaoRegistrar: {
-    backgroundColor: Colors.cost,
+    backgroundColor: Colors.btnAcao,
     borderRadius: 16,
     padding: 20,
     alignItems: 'center',
@@ -259,5 +275,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   botaoDesabilitado: { opacity: 0.6 },
-  botaoTexto: { color: Colors.card, fontSize: 20, fontWeight: 'bold' },
+  botaoTexto: { color: Colors.text, fontSize: 20, fontWeight: 'bold' },
 });

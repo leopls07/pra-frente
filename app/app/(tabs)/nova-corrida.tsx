@@ -14,13 +14,16 @@ import Toast from 'react-native-toast-message';
 import { useRouter } from 'expo-router';
 import { api } from '../../services/api';
 import { Colors } from '../../constants/colors';
+import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 type FormaPagamento = 'pix' | 'dinheiro' | 'cartao';
+type McIcon = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
-const FORMAS: { valor: FormaPagamento; label: string; emoji: string }[] = [
-  { valor: 'pix', label: 'Pix', emoji: '💸' },
-  { valor: 'dinheiro', label: 'Dinheiro', emoji: '💵' },
-  { valor: 'cartao', label: 'Cartão', emoji: '💳' },
+const FORMAS: { valor: FormaPagamento; label: string; icone: McIcon }[] = [
+  { valor: 'pix', label: 'Pix', icone: 'qrcode' },
+  { valor: 'dinheiro', label: 'Dinheiro', icone: 'cash' },
+  { valor: 'cartao', label: 'Cartão', icone: 'credit-card-outline' },
 ];
 
 function formatarDataHora(date: Date): string {
@@ -105,12 +108,13 @@ export default function NovaCorrida() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.headerArea}>
-        <Text style={styles.titulo}>Nova Corrida</Text>
-      </View>
+    <LinearGradient colors={[Colors.primary, Colors.background]} style={styles.gradient}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        <View style={styles.headerArea}>
+          <Text style={styles.titulo}>Nova Corrida</Text>
+        </View>
 
-      <View style={styles.form}>
+        <View style={styles.form}>
       <View style={styles.grupo}>
         <Text style={styles.label}>Valor recebido</Text>
         <TextInput
@@ -140,7 +144,11 @@ export default function NovaCorrida() {
               accessibilityRole="radio"
               accessibilityState={{ selected: formaPagamento === forma.valor }}
             >
-              <Text style={styles.formaEmoji}>{forma.emoji}</Text>
+              <MaterialCommunityIcons
+                name={forma.icone}
+                size={26}
+                color={formaPagamento === forma.valor ? Colors.primary : Colors.textSecondary}
+              />
               <Text
                 style={[
                   styles.formaLabel,
@@ -164,7 +172,7 @@ export default function NovaCorrida() {
           accessibilityRole="button"
         >
           <Text style={styles.inputDataTexto}>{formatarDataHora(data)}</Text>
-          <Text style={styles.inputDataIcone}>📅</Text>
+          <MaterialCommunityIcons name="calendar-month" size={28} color={Colors.primaryDisabled} />
         </TouchableOpacity>
 
         {showPicker && (
@@ -206,24 +214,31 @@ export default function NovaCorrida() {
           {salvando ? 'Registrando...' : 'Registrar Corrida'}
         </Text>
       </TouchableOpacity>
-      </View>
-    </ScrollView>
+        </View>
+      </ScrollView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  content: { paddingBottom: 32 },
+  gradient: { flex: 1 },
+  container: { flex: 1 },
+  content: { flexGrow: 1 },
   headerArea: {
-    backgroundColor: Colors.primary,
     paddingTop: 56,
     paddingHorizontal: 24,
     paddingBottom: 24,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    marginBottom: 8,
   },
-  form: { padding: 24, gap: 24 },
+  form: {
+    padding: 20,
+    gap: 24,
+    backgroundColor: Colors.card,
+    borderRadius: 16,
+    width: '95%',
+    alignSelf: 'center',
+    flex: 1,
+    marginBottom: 16,
+  },
   titulo: { fontSize: 28, fontWeight: 'bold', color: Colors.text },
   grupo: { gap: 8 },
   label: { fontSize: 16, fontWeight: '600', color: Colors.label },
@@ -276,10 +291,10 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: Colors.border,
     textAlignVertical: 'top',
-    minHeight: 80,
+    minHeight: 60,
   },
   botaoRegistrar: {
-    backgroundColor: Colors.gain,
+    backgroundColor: Colors.btnAcao,
     borderRadius: 16,
     padding: 20,
     alignItems: 'center',
@@ -288,5 +303,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   botaoDesabilitado: { opacity: 0.6 },
-  botaoRegistrarTexto: { color: Colors.card, fontSize: 20, fontWeight: 'bold' },
+  botaoRegistrarTexto: { color: Colors.text, fontSize: 20, fontWeight: 'bold' },
 });

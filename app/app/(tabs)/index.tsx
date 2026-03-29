@@ -6,6 +6,8 @@ import Toast from 'react-native-toast-message';
 import { api } from '../../services/api';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Colors } from '../../constants/colors';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 interface PeriodoResumo {
   ganho_bruto: number;
@@ -19,6 +21,7 @@ interface Resumo {
   semana: PeriodoResumo;
   mes: PeriodoResumo;
 }
+
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -55,7 +58,11 @@ export default function HomeScreen() {
   const semCorridas = !loading && (hoje?.total_corridas ?? 0) === 0;
 
   return (
-    <View style={styles.container}>
+    <LinearGradient
+      colors={[ Colors.primary, Colors.background]}
+      locations={[0, 0.7]}
+      style={styles.container}
+    >
       <View style={styles.headerArea}>
         <View style={styles.header}>
           <View style={styles.saudacaoRow}>
@@ -79,88 +86,82 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Hoje</Text>
+        <View style={[styles.card]}>
+          <Text style={styles.cardTitle}>Resumo do dia:</Text>
           {loading ? (
-            <ActivityIndicator color={Colors.primary} size="large" />
+            <ActivityIndicator color={Colors.primary} size="large" style={{ marginTop: 8 }} />
           ) : semCorridas ? (
             <Text style={styles.vazio}>Bora trabalhar hoje!</Text>
           ) : (
-            <>
-              <Text style={styles.resumoLinha}>
-                {hoje?.total_corridas} corrida{hoje?.total_corridas !== 1 ? 's' : ''}
-                {'  ·  '}
-                {fmt(hoje?.ganho_bruto ?? 0)}
-              </Text>
-              {(hoje?.total_abastecimento ?? 0) > 0 && (
-                <Text style={styles.abastecimento}>
-                  ⛽ {fmt(hoje!.total_abastecimento)} em combustível
-                </Text>
-              )}
-            </>
+            <View style={styles.resumoLinhas}>
+              <View style={styles.resumoLinha}>
+                <Text style={styles.resumoLabel}>Total de corridas:</Text>
+                <Text style={styles.resumoValor}>{hoje?.total_corridas}</Text>
+              </View>
+              <View style={styles.resumoLinha}>
+                <Text style={styles.resumoLabel}>Valor ganho hoje:</Text>
+                <Text style={styles.resumoValor}>{fmt(hoje?.ganho_bruto ?? 0)}</Text>
+              </View>
+            </View>
           )}
         </View>
       </View>
 
       <View style={styles.acoes}>
         <TouchableOpacity
-          style={[styles.botaoAcao, { backgroundColor: Colors.gain }]}
+          style={[styles.botaoAcao, { backgroundColor: Colors.btnPrimary }]}
           onPress={() => router.push('/(tabs)/nova-corrida')}
           activeOpacity={0.8}
           accessibilityLabel="Registrar nova corrida"
           accessibilityRole="button"
         >
-          <Text style={styles.botaoIcon}>🚕</Text>
+          <Ionicons name="car-outline" size={28} color={Colors.primaryDisabled} />
           <Text style={styles.botaoTexto}>Nova Corrida</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.botaoAcao, { backgroundColor: Colors.cost }]}
+          style={[styles.botaoAcao, { backgroundColor: Colors.btnPrimary }]}
           onPress={() => router.push('/(tabs)/abastecimento')}
           activeOpacity={0.8}
           accessibilityLabel="Registrar abastecimento"
           accessibilityRole="button"
         >
-          <Text style={styles.botaoIcon}>⛽</Text>
+          <MaterialCommunityIcons name="gas-station-outline" size={28} color={Colors.primaryDisabled} />
           <Text style={styles.botaoTexto}>Abastecimento</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.botaoAcao, { backgroundColor: Colors.primary }]}
+          style={[styles.botaoAcao, { backgroundColor: Colors.btnPrimary }]}
           onPress={() => router.push('/(tabs)/relatorios')}
           activeOpacity={0.8}
           accessibilityLabel="Ver relatórios"
           accessibilityRole="button"
         >
-          <Text style={styles.botaoIcon}>📊</Text>
+          <Ionicons name="stats-chart-outline" size={28} color={Colors.primaryDisabled} />
           <Text style={styles.botaoTexto}>Relatórios</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   headerArea: {
-    backgroundColor: Colors.primary,
     paddingTop: 56,
-    paddingHorizontal: 24,
-    paddingBottom: 28,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    paddingBottom: 12,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 24,
+    paddingHorizontal: 24,
   },
   saudacaoRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  logoHeader: { width: 40, height: 40, borderRadius: 20 },
+  logoHeader: { width: 40, height: 40, },
   saudacao: { fontSize: 26, fontWeight: 'bold', color: Colors.text },
   logout: { fontSize: 16, color: Colors.text },
   card: {
@@ -172,22 +173,22 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 4,
-    alignItems: 'center',
-    gap: 6,
-    minHeight: 120,
-    justifyContent: 'center',
+    gap: 12,
+    minHeight: 100,
+    width: '95%',
+    alignSelf: 'center',
   },
   cardTitle: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontSize: 16,
+    color: Colors.text,
+    fontWeight: '700',
   },
   vazio: { fontSize: 18, color: Colors.textSecondary, textAlign: 'center', marginTop: 4 },
-  resumoLinha: { fontSize: 22, fontWeight: 'bold', color: Colors.gain, textAlign: 'center' },
-  abastecimento: { fontSize: 14, color: Colors.cost, marginTop: 2 },
-  acoes: { gap: 16, padding: 24, paddingTop: 28 },
+  resumoLinhas: { gap: 8, width: '100%' },
+  resumoLinha: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  resumoLabel: { fontSize: 16, color: Colors.textSecondary },
+  resumoValor: { fontSize: 16, fontWeight: 'bold', color: Colors.text },
+  acoes: { gap: 16, padding: 24, paddingTop: 28, backgroundColor: Colors.card, flex: 1, marginHorizontal: '2.5%', borderRadius: 16, marginBottom: 16 },
   botaoAcao: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -195,7 +196,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     gap: 12,
     minHeight: 72,
+    borderWidth:2, 
+    borderColor: Colors.primaryDisabled,
   },
-  botaoIcon: { fontSize: 28 },
-  botaoTexto: { color: Colors.card, fontSize: 20, fontWeight: '700' },
+  botaoTexto: { color: Colors.text, fontSize: 20, fontWeight: '700'},
 });

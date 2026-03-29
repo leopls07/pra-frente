@@ -11,6 +11,7 @@ import {
 import Toast from 'react-native-toast-message';
 import { api } from '../../services/api';
 import { Colors } from '../../constants/colors';
+import { LinearGradient } from 'expo-linear-gradient';
 
 type Periodo = 'hoje' | 'semana' | 'mes';
 
@@ -84,6 +85,8 @@ export default function RelatoriosScreen() {
     setPeriodoSelecionado(periodo);
     setDetalhe(null);
     setLoadingDetalhe(true);
+    setAnualAberto(false);
+    setRelatorioAnual(null);
     try {
       const { data } = await api.get<RelatorioDetalhado>(`/relatorios/detalhado?periodo=${periodo}`);
       setDetalhe(data);
@@ -159,12 +162,14 @@ export default function RelatoriosScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.headerArea}>
-        <Text style={styles.titulo}>Relatórios</Text>
-      </View>
+    <LinearGradient colors={[Colors.primary, Colors.background]} style={styles.gradient}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        <View style={styles.headerArea}>
+          <Text style={styles.titulo}>Relatórios</Text>
+        </View>
 
-      <View style={styles.topBar}>
+        <View style={styles.body}>
+        <View style={styles.topBar}>
         <TouchableOpacity onPress={carregarResumo} disabled={loadingResumo} activeOpacity={0.6}>
           <Text style={[styles.atualizar, loadingResumo && { opacity: 0.4 }]}>
             {loadingResumo ? 'Atualizando...' : '↻ Atualizar'}
@@ -223,11 +228,15 @@ export default function RelatoriosScreen() {
                 <View style={styles.linhas}>
                   <Linha label="Ganho bruto" valor={fmt(detalhe.ganho_bruto)} cor={Colors.gain} />
                   <Linha label="Abastecimentos" valor={fmt(detalhe.total_abastecimento)} cor={Colors.cost} />
-                  <Linha label="Lucro líquido" valor={fmt(detalhe.lucro_liquido)} cor={Colors.primary} destaque />
+                  <Linha label="Lucro líquido" valor={fmt(detalhe.lucro_liquido)} cor={Colors.gain} destaque />
                   <Linha label="Total de corridas" valor={String(detalhe.total_corridas)} />
-                  <Linha label="Dias trabalhados" valor={String(detalhe.dias_trabalhados)} />
+                  {periodoSelecionado !== 'hoje' && (
+                    <Linha label="Dias trabalhados" valor={String(detalhe.dias_trabalhados)} />
+                  )}
                   <Linha label="Média por corrida" valor={fmt(detalhe.media_por_corrida)} />
-                  <Linha label="Média por dia" valor={fmt(detalhe.media_por_dia)} />
+                  {periodoSelecionado !== 'hoje' && (
+                    <Linha label="Média por dia" valor={fmt(detalhe.media_por_dia)} />
+                  )}
                   <Linha label="Pix" valor={fmt(detalhe.por_pagamento.pix)} />
                   <Linha label="Dinheiro" valor={fmt(detalhe.por_pagamento.dinheiro)} />
                   <Linha label="Cartão" valor={fmt(detalhe.por_pagamento.cartao)} />
@@ -238,7 +247,7 @@ export default function RelatoriosScreen() {
                   accessibilityLabel="Compartilhar relatório"
                   accessibilityRole="button"
                 >
-                  <Text style={styles.botaoCompartilharTexto}>📤 Compartilhar</Text>
+                  <Text style={styles.botaoCompartilharTexto}>Compartilhar</Text>
                 </TouchableOpacity>
               </>
             )
@@ -249,7 +258,7 @@ export default function RelatoriosScreen() {
       <View style={styles.anualContainer}>
         {!anualAberto ? (
           <TouchableOpacity onPress={abrirAnual} activeOpacity={0.6}>
-            <Text style={styles.anualLink}>📅 Gerar relatório anual</Text>
+            <Text style={styles.anualLink}>Gerar relatório anual</Text>
           </TouchableOpacity>
         ) : (
           <View style={styles.anualCard}>
@@ -280,7 +289,7 @@ export default function RelatoriosScreen() {
                   <View style={styles.linhas}>
                     <Linha label="Ganho bruto" valor={fmt(relatorioAnual.ganho_bruto)} cor={Colors.gain} />
                     <Linha label="Abastecimentos" valor={fmt(relatorioAnual.total_abastecimento)} cor={Colors.cost} />
-                    <Linha label="Lucro líquido" valor={fmt(relatorioAnual.lucro_liquido)} cor={Colors.primary} destaque />
+                    <Linha label="Lucro líquido" valor={fmt(relatorioAnual.lucro_liquido)} cor={Colors.gain} destaque />
                     <Linha label="Total de corridas" valor={String(relatorioAnual.total_corridas)} />
                     <Linha label="Dias trabalhados" valor={String(relatorioAnual.dias_trabalhados)} />
                     <Linha label="Média por corrida" valor={fmt(relatorioAnual.media_por_corrida)} />
@@ -295,15 +304,17 @@ export default function RelatoriosScreen() {
                     accessibilityLabel="Compartilhar relatório anual"
                     accessibilityRole="button"
                   >
-                    <Text style={styles.botaoCompartilharTexto}>📤 Compartilhar</Text>
+                    <Text style={styles.botaoCompartilharTexto}>Compartilhar</Text>
                   </TouchableOpacity>
                 </>
               )
             ) : null}
           </View>
         )}
-      </View>
-    </ScrollView>
+        </View>
+        </View>
+      </ScrollView>
+    </LinearGradient>
   );
 }
 
@@ -334,26 +345,33 @@ const linhaStyles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
-  rowDestaque: { backgroundColor: Colors.selectedBg, borderRadius: 8, paddingHorizontal: 8 },
+  rowDestaque: { backgroundColor: '#E8F5E9', borderRadius: 8, paddingHorizontal: 8 },
   label: { fontSize: 16, color: Colors.textSecondary },
   valor: { fontSize: 16, fontWeight: '700', color: Colors.text },
 });
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  content: { paddingBottom: 48 },
+  gradient: { flex: 1 },
+  container: { flex: 1 },
+  content: { flexGrow: 1 },
   headerArea: {
-    backgroundColor: Colors.primary,
     paddingTop: 56,
     paddingHorizontal: 24,
     paddingBottom: 24,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    marginBottom: 12,
+  },
+  body: {
+    backgroundColor: Colors.card,
+    borderRadius: 16,
+    width: '95%',
+    alignSelf: 'center',
+    paddingTop: 8,
+    paddingBottom: 32,
+    flex: 1,
+    marginBottom: 16,
   },
   titulo: { fontSize: 28, fontWeight: 'bold', color: Colors.text },
   topBar: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 12,
     paddingBottom: 8,
     alignItems: 'flex-end',
   },
@@ -362,7 +380,7 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontWeight: '600',
   },
-  cards: { gap: 12, paddingHorizontal: 24 },
+  cards: { gap: 12, paddingHorizontal: 12 },
   card: {
     backgroundColor: Colors.card,
     borderRadius: 16,
@@ -379,10 +397,10 @@ const styles = StyleSheet.create({
   cardSubtexto: { fontSize: 13, color: Colors.textMuted },
   cardSemDados: { fontSize: 14, color: Colors.textMuted, fontStyle: 'italic' },
   detalhe: {
-    backgroundColor: Colors.card,
+    backgroundColor: Colors.background,
     borderRadius: 16,
     padding: 20,
-    marginHorizontal: 24,
+    marginHorizontal: 12,
     marginTop: 8,
   },
   detalheTitle: { fontSize: 20, fontWeight: 'bold', color: Colors.text, marginBottom: 12 },
@@ -394,7 +412,7 @@ const styles = StyleSheet.create({
   },
   linhas: {},
   botaoCompartilhar: {
-    backgroundColor: '#25D366',
+    backgroundColor: Colors.btnAcao,
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
@@ -402,16 +420,18 @@ const styles = StyleSheet.create({
     minHeight: 52,
     justifyContent: 'center',
   },
-  botaoCompartilharTexto: { color: Colors.card, fontSize: 16, fontWeight: 'bold' },
+  botaoCompartilharTexto: { color: Colors.text, fontSize: 16, fontWeight: 'bold' },
   anualContainer: {
-    marginHorizontal: 24,
-    marginTop: 24,
-    alignItems: 'center',
+    marginHorizontal: 12,
+    marginTop: 16,
+    alignItems: 'flex-start',
   },
   anualLink: {
     fontSize: 14,
-    color: Colors.textSecondary,
-    textDecorationLine: 'underline',
+    alignSelf: 'flex-start',
+    color: Colors.primary,
+    fontWeight: '600',
+    marginLeft: 8,
   },
   anualCard: {
     backgroundColor: Colors.card,
