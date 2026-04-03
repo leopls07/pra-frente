@@ -29,6 +29,15 @@ export default function LoginScreen() {
   const [erro, setErro] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Cadastro concluído — aguardando confirmação de email
+  const [cadastroRealizado, setCadastroRealizado] = useState(false);
+  const [emailCadastrado, setEmailCadastrado] = useState('');
+
+  // Login bloqueado por email não confirmado
+  const [emailNaoConfirmado, setEmailNaoConfirmado] = useState(false);
+  const [reenviando, setReenviando] = useState(false);
+  const [reenvioSucesso, setReenvioSucesso] = useState(false);
+
   const trocarModo = (novoModo: Modo) => {
     setModo(novoModo);
     setErro('');
@@ -36,6 +45,8 @@ export default function LoginScreen() {
     setEmail('');
     setSenha('');
     setConfirmarSenha('');
+    setEmailNaoConfirmado(false);
+    setReenvioSucesso(false);
   };
 
   const validar = (): string | null => {
@@ -58,27 +69,89 @@ export default function LoginScreen() {
     }
 
     setErro('');
+    setEmailNaoConfirmado(false);
+    setReenvioSucesso(false);
     setLoading(true);
 
     try {
-      const endpoint = modo === 'login' ? '/auth/login' : '/auth/register';
-      const body =
-        modo === 'login'
-          ? { email: email.trim(), password: senha }
-          : { email: email.trim(), password: senha, name: nome.trim() };
-
-      const { data } = await api.post<{ jwt: string; user: { email: string; name: string } }>(
-        endpoint,
-        body
-      );
-      await setUsuario(data.user, data.jwt);
+      if (modo === 'cadastro') {
+        await api.post('/auth/register', {
+          email: email.trim(),
+          password: senha,
+          name: nome.trim(),
+        });
+        setEmailCadastrado(email.trim());
+        setCadastroRealizado(true);
+      } else {
+        const { data } = await api.post<{ jwt: string; user: { email: string; name: string } }>(
+          '/auth/login',
+          { email: email.trim(), password: senha }
+        );
+        await setUsuario(data.user, data.jwt);
+      }
     } catch (error: any) {
+      const status = error?.response?.status;
       const mensagem = error?.response?.data?.error;
-      setErro(mensagem ?? 'Erro de conexao. Verifique sua internet.');
+      const codigo = error?.response?.data?.codigo;
+
+      if (status === 403 && codigo === 'EMAIL_NAO_CONFIRMADO') {
+        setEmailNaoConfirmado(true);
+        setErro('');
+      } else {
+        setErro(mensagem ?? 'Erro de conexao. Verifique sua internet.');
+      }
     } finally {
       setLoading(false);
     }
   };
+
+  const handleReenviarConfirmacao = async () => {
+    setReenviando(true);
+    setReenvioSucesso(false);
+    try {
+      await api.post('/auth/reenviar-confirmacao', { email: email.trim() });
+      setReenvioSucesso(true);
+    } catch {
+      // Resposta genérica do servidor — não há erro real a tratar aqui
+      setReenvioSucesso(true);
+    } finally {
+      setReenviando(false);
+    }
+  };
+
+  // Tela pós-cadastro: aviso para confirmar email
+  if (cadastroRealizado) {
+    return (
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+          <Image
+            source={require('../../assets/logo_prafrente.png')}
+            style={styles.logoMenor}
+            resizeMode="contain"
+          />
+          <View style={styles.avisoBox}>
+            <Text style={styles.avisoIcone}>📧</Text>
+            <Text style={styles.avisoTitulo}>Cadastro realizado!</Text>
+            <Text style={styles.avisoTexto}>
+              Enviamos um email de confirmação para{' '}
+              <Text style={styles.avisoEmail}>{emailCadastrado}</Text>.{'\n\n'}
+              Confirme seu email para acessar o app.
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.botao}
+            onPress={() => {
+              setCadastroRealizado(false);
+              trocarModo('login');
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.botaoTexto}>Ir para o login</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    );
+  }
 
   return (
     <KeyboardAvoidingView
@@ -136,7 +209,11 @@ export default function LoginScreen() {
               placeholder="seu@email.com"
               placeholderTextColor="#9CA3AF"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(v) => {
+                setEmail(v);
+                if (emailNaoConfirmado) setEmailNaoConfirmado(false);
+                if (reenvioSucesso) setReenvioSucesso(false);
+              }}
               autoCapitalize="none"
               keyboardType="email-address"
               returnKeyType="next"
@@ -164,6 +241,32 @@ export default function LoginScreen() {
           )}
 
           {erro !== '' && <Text style={styles.erro}>{erro}</Text>}
+
+          {emailNaoConfirmado && (
+            <View style={styles.avisoEmailBox}>
+              <Text style={styles.avisoEmailTexto}>
+                Confirme seu email antes de acessar. Verifique sua caixa de entrada.
+              </Text>
+              {reenvioSucesso ? (
+                <Text style={styles.reenvioSucesso}>
+                  Email reenviado! Verifique sua caixa de entrada.
+                </Text>
+              ) : (
+                <TouchableOpacity
+                  style={styles.botaoReenviar}
+                  onPress={handleReenviarConfirmacao}
+                  activeOpacity={0.8}
+                  disabled={reenviando}
+                >
+                  {reenviando ? (
+                    <ActivityIndicator color={Colors.primary} />
+                  ) : (
+                    <Text style={styles.botaoReenviarTexto}>Reenviar email de confirmação</Text>
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
 
           <TouchableOpacity
             style={[styles.botao, loading && styles.botaoDesabilitado]}
@@ -247,4 +350,69 @@ const styles = StyleSheet.create({
   botaoTexto: { color: Colors.card, fontSize: 18, fontWeight: 'bold' },
   logo: { width: 160, height: 160, marginBottom: 32 },
   logoMenor: { width: 120, height: 120, marginBottom: 24 },
+
+  // Aviso de email não confirmado (no formulário de login)
+  avisoEmailBox: {
+    backgroundColor: '#FFF7ED',
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#FED7AA',
+    padding: 16,
+    gap: 12,
+  },
+  avisoEmailTexto: {
+    fontSize: 15,
+    color: '#92400E',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  botaoReenviar: {
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    minHeight: 48,
+    justifyContent: 'center',
+  },
+  botaoReenviarTexto: {
+    color: Colors.primary,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  reenvioSucesso: {
+    fontSize: 14,
+    color: '#16A34A',
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+
+  // Tela pós-cadastro
+  avisoBox: {
+    backgroundColor: Colors.card,
+    borderRadius: 16,
+    padding: 32,
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: 320,
+    marginBottom: 24,
+    gap: 12,
+  },
+  avisoIcone: { fontSize: 56 },
+  avisoTitulo: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: Colors.text,
+    textAlign: 'center',
+  },
+  avisoTexto: {
+    fontSize: 16,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  avisoEmail: {
+    fontWeight: 'bold',
+    color: Colors.text,
+  },
 });
