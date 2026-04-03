@@ -11,7 +11,10 @@ import {
   ScrollView,
   Image,
 } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { api } from '../../services/api';
+import { tratarErro } from '../../utils/tratarErro';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Colors } from '../../constants/colors';
 import { PasswordInput } from '../../components/ui/PasswordInput';
@@ -20,6 +23,7 @@ type Modo = 'login' | 'cadastro';
 
 export default function LoginScreen() {
   const { setUsuario } = useAuthStore();
+  const router = useRouter();
 
   const [modo, setModo] = useState<Modo>('login');
   const [nome, setNome] = useState('');
@@ -89,16 +93,16 @@ export default function LoginScreen() {
         );
         await setUsuario(data.user, data.jwt);
       }
-    } catch (error: any) {
-      const status = error?.response?.status;
-      const mensagem = error?.response?.data?.error;
-      const codigo = error?.response?.data?.codigo;
+    } catch (error: unknown) {
+      const axiosError = (error as any)?.response;
+      const status = axiosError?.status;
+      const codigo = axiosError?.data?.codigo;
 
       if (status === 403 && codigo === 'EMAIL_NAO_CONFIRMADO') {
         setEmailNaoConfirmado(true);
         setErro('');
       } else {
-        setErro(mensagem ?? 'Erro de conexao. Verifique sua internet.');
+        setErro(tratarErro(error));
       }
     } finally {
       setLoading(false);
@@ -130,7 +134,7 @@ export default function LoginScreen() {
             resizeMode="contain"
           />
           <View style={styles.avisoBox}>
-            <Text style={styles.avisoIcone}>📧</Text>
+            <MaterialIcons name="email" size={64} color={Colors.primary} />
             <Text style={styles.avisoTitulo}>Cadastro realizado!</Text>
             <Text style={styles.avisoTexto}>
               Enviamos um email de confirmação para{' '}
@@ -228,6 +232,16 @@ export default function LoginScreen() {
             returnKeyType={modo === 'cadastro' ? 'next' : 'done'}
             onSubmitEditing={modo === 'login' ? handleSubmit : undefined}
           />
+
+          {modo === 'login' && (
+            <TouchableOpacity
+              onPress={() => router.push('/(auth)/esqueceu-senha')}
+              activeOpacity={0.6}
+              style={styles.linkEsqueceuSenha}
+            >
+              <Text style={styles.linkEsqueceuSenhaTexto}>Esqueceu sua senha?</Text>
+            </TouchableOpacity>
+          )}
 
           {modo === 'cadastro' && (
             <PasswordInput
@@ -345,11 +359,19 @@ const styles = StyleSheet.create({
     minHeight: 56,
     justifyContent: 'center',
     marginTop: 8,
+    paddingHorizontal: 24,
   },
   botaoDesabilitado: { backgroundColor: Colors.primaryDisabled },
-  botaoTexto: { color: Colors.card, fontSize: 18, fontWeight: 'bold' },
+  botaoTexto: { color: Colors.card, fontSize: 18, fontWeight: 'bold', },
   logo: { width: 160, height: 160, marginBottom: 32 },
   logoMenor: { width: 120, height: 120, marginBottom: 24 },
+
+  linkEsqueceuSenha: { alignSelf: 'flex-end' },
+  linkEsqueceuSenhaTexto: {
+    fontSize: 14,
+    color: Colors.primary,
+    fontWeight: '600',
+  },
 
   // Aviso de email não confirmado (no formulário de login)
   avisoEmailBox: {
@@ -398,8 +420,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     gap: 12,
   },
-  avisoIcone: { fontSize: 56 },
-  avisoTitulo: {
+avisoTitulo: {
     fontSize: 22,
     fontWeight: 'bold',
     color: Colors.text,

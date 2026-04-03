@@ -13,6 +13,7 @@ import * as Haptics from 'expo-haptics';
 import Toast from 'react-native-toast-message';
 import { useRouter } from 'expo-router';
 import { api } from '../../services/api';
+import { tratarErro } from '../../utils/tratarErro';
 import { Colors } from '../../constants/colors';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -100,8 +101,8 @@ export default function NovaCorrida() {
       Toast.show({ type: 'success', text1: 'Corrida registrada!', position: 'bottom' });
 
       router.replace('/(tabs)/');
-    } catch {
-      // erros de rede já tratados pelo interceptor do api.ts
+    } catch (error: unknown) {
+      Toast.show({ type: 'error', text1: tratarErro(error), position: 'bottom' });
     } finally {
       setSalvando(false);
     }

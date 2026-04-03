@@ -27,14 +27,14 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
     const corridas = await Corrida.find(filtro).sort({ data: -1 });
     res.json(corridas);
   } catch {
-    res.status(500).json({ error: 'Erro ao buscar corridas.' });
+    res.status(500).json({ message: 'Erro ao buscar corridas.' });
   }
 });
 
 router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
   const parsed = corridaSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: 'Dados inválidos.', details: parsed.error.flatten() });
+    res.status(400).json({ message: 'Dados inválidos.', details: parsed.error.flatten() });
     return;
   }
 
@@ -42,14 +42,14 @@ router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
     const corrida = await Corrida.create({ ...parsed.data, userEmail: req.user!.email });
     res.status(201).json(corrida);
   } catch {
-    res.status(500).json({ error: 'Erro ao registrar corrida.' });
+    res.status(500).json({ message: 'Erro ao registrar corrida.' });
   }
 });
 
 router.put('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
   const parsed = corridaSchema.partial().safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: 'Dados inválidos.', details: parsed.error.flatten() });
+    res.status(400).json({ message: 'Dados inválidos.', details: parsed.error.flatten() });
     return;
   }
 
@@ -60,12 +60,12 @@ router.put('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
       { new: true }
     );
     if (!corrida) {
-      res.status(404).json({ error: 'Corrida não encontrada.' });
+      res.status(404).json({ message: 'Corrida não encontrada.' });
       return;
     }
     res.json(corrida);
   } catch {
-    res.status(500).json({ error: 'Erro ao atualizar corrida.' });
+    res.status(500).json({ message: 'Erro ao atualizar corrida.' });
   }
 });
 
@@ -73,12 +73,12 @@ router.delete('/:id', async (req: AuthRequest, res: Response): Promise<void> => 
   try {
     const corrida = await Corrida.findOneAndDelete({ _id: req.params.id, userEmail: req.user!.email });
     if (!corrida) {
-      res.status(404).json({ error: 'Corrida não encontrada.' });
+      res.status(404).json({ message: 'Corrida não encontrada.' });
       return;
     }
     res.status(204).send();
   } catch {
-    res.status(500).json({ error: 'Erro ao deletar corrida.' });
+    res.status(500).json({ message: 'Erro ao deletar corrida.' });
   }
 });
 

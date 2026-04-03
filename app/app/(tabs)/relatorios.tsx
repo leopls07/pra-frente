@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import Toast from 'react-native-toast-message';
 import { api } from '../../services/api';
+import { tratarErro } from '../../utils/tratarErro';
 import { Colors } from '../../constants/colors';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -68,8 +69,8 @@ export default function RelatoriosScreen() {
     setDetalhe(null);
     api.get<ResumoGeral>('/relatorios/resumo')
       .then(({ data }) => setResumo(data))
-      .catch(() => {
-        Toast.show({ type: 'error', text1: 'Não foi possível carregar os relatórios.', position: 'bottom' });
+      .catch((error: unknown) => {
+        Toast.show({ type: 'error', text1: tratarErro(error), position: 'bottom' });
       })
       .finally(() => setLoadingResumo(false));
   }, []);
@@ -90,7 +91,8 @@ export default function RelatoriosScreen() {
     try {
       const { data } = await api.get<RelatorioDetalhado>(`/relatorios/detalhado?periodo=${periodo}`);
       setDetalhe(data);
-    } catch {
+    } catch (error: unknown) {
+      Toast.show({ type: 'error', text1: tratarErro(error), position: 'bottom' });
       setPeriodoSelecionado(null);
     } finally {
       setLoadingDetalhe(false);
@@ -107,8 +109,8 @@ export default function RelatoriosScreen() {
         `/relatorios/detalhado?inicio=${inicio}&fim=${fim}`
       );
       setRelatorioAnual(data);
-    } catch {
-      Toast.show({ type: 'error', text1: 'Não foi possível carregar o relatório anual.', position: 'bottom' });
+    } catch (error: unknown) {
+      Toast.show({ type: 'error', text1: tratarErro(error), position: 'bottom' });
     } finally {
       setLoadingAnual(false);
     }

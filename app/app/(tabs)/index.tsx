@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useFocusEffect } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import { api } from '../../services/api';
+import { tratarErro } from '../../utils/tratarErro';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Colors } from '../../constants/colors';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -40,12 +41,8 @@ export default function HomeScreen() {
       setLoading(true);
       api.get<Resumo>('/relatorios/resumo')
         .then(({ data }) => setResumo(data))
-        .catch(() => {
-          Toast.show({
-            type: 'error',
-            text1: 'Não foi possível carregar o resumo',
-            position: 'bottom',
-          });
+        .catch((error: unknown) => {
+          Toast.show({ type: 'error', text1: tratarErro(error), position: 'bottom' });
         })
         .finally(() => setLoading(false));
     }, [])

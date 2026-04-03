@@ -58,7 +58,7 @@ router.get('/resumo', async (req: AuthRequest, res: Response): Promise<void> => 
       mes: resultados[2],
     });
   } catch {
-    res.status(500).json({ error: 'Erro ao gerar resumo.' });
+    res.status(500).json({ message: 'Erro ao gerar resumo.' });
   }
 });
 
@@ -110,7 +110,7 @@ router.get('/detalhado', async (req: AuthRequest, res: Response): Promise<void> 
       por_pagamento,
     });
   } catch {
-    res.status(500).json({ error: 'Erro ao gerar relatório detalhado.' });
+    res.status(500).json({ message: 'Erro ao gerar relatório detalhado.' });
   }
 });
 

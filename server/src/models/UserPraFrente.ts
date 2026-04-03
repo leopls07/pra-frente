@@ -6,6 +6,7 @@ export interface IUserPraFrente extends Document {
   passwordHash: string;
   confirmado: boolean;
   tokenConfirmacao?: string;
+  tokenRedefinicaoSenha?: string;
   createdAt: Date;
 }
 
@@ -16,6 +17,7 @@ const UserPraFrenteSchema = new Schema<IUserPraFrente>(
     passwordHash: { type: String, required: true },
     confirmado: { type: Boolean, default: false },
     tokenConfirmacao: { type: String },
+    tokenRedefinicaoSenha: { type: String },
   },
   { timestamps: { createdAt: true, updatedAt: false } }
 );

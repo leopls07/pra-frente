@@ -12,6 +12,7 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import * as Haptics from 'expo-haptics';
 import Toast from 'react-native-toast-message';
 import { api } from '../../services/api';
+import { tratarErro } from '../../utils/tratarErro';
 import { TipoCombustivel } from '../../types';
 import { Colors } from '../../constants/colors';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -97,8 +98,8 @@ export default function AbastecimentoScreen() {
       setValor('');
       setTipoCombustivel('gasolina');
       setData(new Date());
-    } catch {
-      // erros de rede já tratados pelo interceptor do api.ts
+    } catch (error: unknown) {
+      Toast.show({ type: 'error', text1: tratarErro(error), position: 'bottom' });
     } finally {
       setSalvando(false);
     }

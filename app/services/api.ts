@@ -1,6 +1,5 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
-import Toast from 'react-native-toast-message';
 import { useAuthStore } from '../store/useAuthStore';
 
 const JWT_KEY = 'pra_frente_jwt';
@@ -32,18 +31,11 @@ api.interceptors.response.use(
   async (error) => {
     if (!error.response) {
       console.log(`[API] ❌ sem resposta — baseURL: ${error.config?.baseURL}, url: ${error.config?.url}, msg: ${error.message}`);
-      Toast.show({
-        type: 'error',
-        text1: 'Sem conexão',
-        text2: 'Verifique sua internet e tente novamente.',
-        position: 'bottom',
-      });
-      return Promise.reject(error);
-    }
-
-    console.log(`[API] ⚠️ ${error.response.status} ${error.config?.url}`, error.response.data);
-    if (error.response.status === 401) {
-      useAuthStore.getState().logout();
+    } else {
+      console.log(`[API] ⚠️ ${error.response.status} ${error.config?.url}`, error.response.data);
+      if (error.response.status === 401) {
+        useAuthStore.getState().logout();
+      }
     }
 
     return Promise.reject(error);

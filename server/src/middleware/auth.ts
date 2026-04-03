@@ -9,7 +9,7 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
   const authHeader = req.headers.authorization;
 
   if (!authHeader?.startsWith('Bearer ')) {
-    res.status(401).json({ error: 'Token não fornecido.' });
+    res.status(401).json({ message: 'Token não fornecido.' });
     return;
   }
 
@@ -23,6 +23,6 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
     req.user = { email: payload.email, name: payload.name };
     next();
   } catch {
-    res.status(401).json({ error: 'Token inválido ou expirado.' });
+    res.status(401).json({ message: 'Token inválido ou expirado.' });
   }
 }
