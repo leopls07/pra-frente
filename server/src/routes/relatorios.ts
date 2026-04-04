@@ -31,15 +31,14 @@ function rangeParaPeriodo(periodo: string): { inicio: Date; fim: Date } {
 
 router.get('/resumo', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const email = req.user!.email;
     const periodos = ['hoje', 'semana', 'mes'] as const;
 
     const resultados = await Promise.all(
       periodos.map(async (p) => {
         const { inicio, fim } = rangeParaPeriodo(p);
         const [corridas, abastecimentos] = await Promise.all([
-          Corrida.find({ userEmail: email, data: { $gte: inicio, $lte: fim } }),
-          Abastecimento.find({ userEmail: email, data: { $gte: inicio, $lte: fim } }),
+          Corrida.find({ userId: req.user!.id, data: { $gte: inicio, $lte: fim } }),
+          Abastecimento.find({ userId: req.user!.id, data: { $gte: inicio, $lte: fim } }),
         ]);
         const ganho_bruto = corridas.reduce((acc, c) => acc + c.valor, 0);
         const total_abastecimento = abastecimentos.reduce((acc, a) => acc + a.valor, 0);

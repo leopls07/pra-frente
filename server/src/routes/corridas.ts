@@ -16,7 +16,7 @@ const corridaSchema = z.object({
 router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { inicio, fim } = req.query;
-    const filtro: Record<string, unknown> = { userEmail: req.user!.email };
+    const filtro: Record<string, unknown> = { userId: req.user!.id };
 
     if (inicio || fim) {
       filtro.data = {};
@@ -39,7 +39,11 @@ router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
   }
 
   try {
-    const corrida = await Corrida.create({ ...parsed.data, userEmail: req.user!.email });
+    const corrida = await Corrida.create({
+      ...parsed.data,
+      userId: req.user!.id,
+      userEmail: req.user!.email,
+    });
     res.status(201).json(corrida);
   } catch {
     res.status(500).json({ message: 'Erro ao registrar corrida.' });
@@ -55,7 +59,7 @@ router.put('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
 
   try {
     const corrida = await Corrida.findOneAndUpdate(
-      { _id: req.params.id, userEmail: req.user!.email },
+      { _id: req.params.id, userId: req.user!.id },
       parsed.data,
       { new: true }
     );
@@ -71,7 +75,7 @@ router.put('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
 
 router.delete('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const corrida = await Corrida.findOneAndDelete({ _id: req.params.id, userEmail: req.user!.email });
+    const corrida = await Corrida.findOneAndDelete({ _id: req.params.id, userId: req.user!.id });
     if (!corrida) {
       res.status(404).json({ message: 'Corrida não encontrada.' });
       return;

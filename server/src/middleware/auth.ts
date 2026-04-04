@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
 export interface AuthRequest extends Request {
-  user?: { email: string; name: string };
+  user?: { id: string; email: string; name: string };
 }
 
 export function authMiddleware(req: AuthRequest, res: Response, next: NextFunction): void {
@@ -17,10 +17,11 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET as string) as {
+      id: string;
       email: string;
       name: string;
     };
-    req.user = { email: payload.email, name: payload.name };
+    req.user = { id: payload.id, email: payload.email, name: payload.name };
     next();
   } catch {
     res.status(401).json({ message: 'Token inválido ou expirado.' });

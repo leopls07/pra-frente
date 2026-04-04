@@ -1,6 +1,7 @@
 import { Schema, model, Document } from 'mongoose';
 
 export interface ICorrida extends Document {
+  userId: string;
   userEmail: string;
   valor: number;
   formaPagamento: 'pix' | 'dinheiro' | 'cartao';
@@ -9,6 +10,7 @@ export interface ICorrida extends Document {
 }
 
 const CorridaSchema = new Schema<ICorrida>({
+  userId: { type: String, index: true },
   userEmail: { type: String, required: true, index: true },
   valor: { type: Number, required: true, min: 0 },
   formaPagamento: {

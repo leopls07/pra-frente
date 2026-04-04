@@ -3,6 +3,7 @@ import { Schema, model, Document } from 'mongoose';
 export type TipoCombustivel = 'gasolina' | 'etanol' ;
 
 export interface IAbastecimento extends Document {
+  userId: string;
   userEmail: string;
   valor: number;
   tipoCombustivel: TipoCombustivel;
@@ -10,6 +11,7 @@ export interface IAbastecimento extends Document {
 }
 
 const AbastecimentoSchema = new Schema<IAbastecimento>({
+  userId: { type: String, index: true },
   userEmail: { type: String, required: true, index: true },
   valor: { type: Number, required: true, min: 0 },
   tipoCombustivel: {
