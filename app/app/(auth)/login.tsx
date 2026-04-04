@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   botaoDesabilitado: { backgroundColor: Colors.primaryDisabled },
-  botaoTexto: { color: Colors.card, fontSize: 18, fontWeight: 'bold', },
+  botaoTexto: { color: Colors.text, fontSize: 18, fontWeight: 'bold', },
   logo: { width: 160, height: 160, marginBottom: 32 },
   logoMenor: { width: 120, height: 120, marginBottom: 24 },
 

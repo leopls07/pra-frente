@@ -61,6 +61,10 @@ export default function TabsLayout() {
           tabBarIcon: ({ focused }) => icon(focused, 'stats-chart', 'stats-chart-outline'),
         }}
       />
+      <Tabs.Screen
+        name="configuracoes"
+        options={{ href: null }}
+      />
     </Tabs>
   );
 }

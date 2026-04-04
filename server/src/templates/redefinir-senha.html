@@ -146,12 +146,10 @@
       var el = document.getElementById('resultado');
       if (sucesso) {
         el.className = 'resultado resultado-sucesso';
-        document.getElementById('resultado-icone').textContent = '✅';
         document.getElementById('resultado-titulo').textContent = 'Senha alterada!';
         document.getElementById('resultado-texto').textContent = 'Sua senha foi alterada com sucesso. Volte para o app e faça login.';
       } else {
         el.className = 'resultado resultado-erro';
-        document.getElementById('resultado-icone').textContent = '❌';
         document.getElementById('resultado-titulo').textContent = 'Não foi possível alterar';
         document.getElementById('resultado-texto').textContent = 'Tivemos um problema para alterar sua senha. O link pode ter expirado — solicite uma nova redefinição no app.';
       }

@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { authMiddleware, AuthRequest } from '../middleware/auth';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
@@ -149,7 +150,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
     const jwtToken = jwt.sign(
       { email: user.email, name: user.name },
       process.env.JWT_SECRET as string,
-      { expiresIn: '24h' }
+      { expiresIn: '360h' }
     );
 
     res.json({ jwt: jwtToken, user: { email: user.email, name: user.name } });
@@ -263,6 +264,40 @@ router.get('/redefinir-senha', async (req: Request, res: Response): Promise<void
   }
 });
 
+router.post('/alterar-senha', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
+  const { senhaAtual, novaSenha } = req.body;
+
+  if (!senhaAtual || typeof senhaAtual !== 'string') {
+    res.status(400).json({ message: 'Informe a senha atual.' });
+    return;
+  }
+  if (!novaSenha || typeof novaSenha !== 'string' || novaSenha.length < 6) {
+    res.status(400).json({ message: 'A nova senha deve ter no mínimo 6 caracteres.' });
+    return;
+  }
+
+  try {
+    const user = await UserPraFrente.findOne({ email: req.user!.email });
+    if (!user) {
+      res.status(404).json({ message: 'Usuário não encontrado.' });
+      return;
+    }
+
+    const senhaCorreta = await bcrypt.compare(senhaAtual, user.passwordHash);
+    if (!senhaCorreta) {
+      res.status(400).json({ message: 'Senha atual incorreta.' });
+      return;
+    }
+
+    user.passwordHash = await bcrypt.hash(novaSenha, 10);
+    await user.save();
+
+    res.json({ message: 'Senha alterada com sucesso.' });
+  } catch {
+    res.status(500).json({ message: 'Erro ao alterar senha. Tente novamente.' });
+  }
+});
+
 router.post('/redefinir-senha', async (req: Request, res: Response): Promise<void> => {
   const { token, novaSenha } = req.body;
 
@@ -307,11 +342,9 @@ function paginaHTML(tipo: 'sucesso' | 'erro', mensagem: string): string {
     'utf-8'
   );
   const cor = tipo === 'sucesso' ? '#1A6B3C' : '#C0392B';
-  const icone = tipo === 'sucesso' ? '✅' : '❌';
   const titulo = tipo === 'sucesso' ? 'Tudo certo!' : 'Algo deu errado';
   return html
     .replace('{{cor_titulo}}', cor)
-    .replace('{{icone}}', icone)
     .replace('{{titulo}}', titulo)
     .replace('{{mensagem}}', mensagem);
 }

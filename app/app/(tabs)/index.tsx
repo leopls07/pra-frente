@@ -26,15 +26,9 @@ interface Resumo {
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { usuario, logout } = useAuthStore();
+  const { usuario } = useAuthStore();
   const [resumo, setResumo] = useState<Resumo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saindo, setSaindo] = useState(false);
-
-  const handleLogout = async () => {
-    setSaindo(true);
-    await logout();
-  };
 
   useFocusEffect(
     useCallback(() => {
@@ -73,13 +67,12 @@ export default function HomeScreen() {
             </Text>
           </View>
           <TouchableOpacity
-            onPress={handleLogout}
-            disabled={saindo}
+            onPress={() => router.push('/(tabs)/configuracoes')}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            accessibilityLabel="Sair do aplicativo"
+            accessibilityLabel="Configurações"
             accessibilityRole="button"
           >
-            <Text style={[styles.logout, saindo && { opacity: 0.4 }]}>Sair</Text>
+            <Ionicons name="settings-outline" size={26} color={Colors.text} />
           </TouchableOpacity>
         </View>
 
@@ -160,7 +153,6 @@ const styles = StyleSheet.create({
   saudacaoRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   logoHeader: { width: 40, height: 40, },
   saudacao: { fontSize: 26, fontWeight: 'bold', color: Colors.text },
-  logout: { fontSize: 16, color: Colors.text },
   card: {
     backgroundColor: Colors.card,
     borderRadius: 16,
