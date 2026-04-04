@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
   resumoLinhas: { gap: 8, width: '100%' },
   resumoLinha: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   resumoLabel: { fontSize: 16, color: Colors.textSecondary },
-  resumoValor: { fontSize: 16, fontWeight: 'bold', color: Colors.text },
+  resumoValor: { fontSize: 16, fontWeight: 'bold', color: Colors.text, fontVariant: ['tabular-nums'] },
   acoes: { gap: 16, padding: 24, paddingTop: 28, backgroundColor: Colors.card, flex: 1, marginHorizontal: '2.5%', borderRadius: 16, marginBottom: 16 },
   botaoAcao: {
     flexDirection: 'row',

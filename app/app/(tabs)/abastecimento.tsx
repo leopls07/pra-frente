@@ -235,6 +235,7 @@ const styles = StyleSheet.create({
     color: Colors.cost,
     borderWidth: 2,
     borderColor: Colors.border,
+    fontVariant: ['tabular-nums'],
   },
   grid: { flexDirection: 'row', gap: 12 },
   botaoCombustivel: {

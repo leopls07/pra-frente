@@ -349,7 +349,7 @@ const linhaStyles = StyleSheet.create({
   },
   rowDestaque: { backgroundColor: '#E8F5E9', borderRadius: 8, paddingHorizontal: 8 },
   label: { fontSize: 16, color: Colors.textSecondary },
-  valor: { fontSize: 16, fontWeight: '700', color: Colors.text },
+  valor: { fontSize: 16, fontWeight: '700', color: Colors.text, fontVariant: ['tabular-nums'] },
 });
 
 const styles = StyleSheet.create({
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
   },
   cardSelecionado: { borderColor: Colors.primary },
   cardLabel: { fontSize: 13, color: Colors.textSecondary, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  cardLucro: { fontSize: 30, fontWeight: 'bold', color: Colors.gain },
+  cardLucro: { fontSize: 30, fontWeight: 'bold', color: Colors.gain, fontVariant: ['tabular-nums'] },
   cardSubtexto: { fontSize: 13, color: Colors.textMuted },
   cardSemDados: { fontSize: 14, color: Colors.textMuted, fontStyle: 'italic' },
   detalhe: {

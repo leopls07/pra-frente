@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Redefinir senha — Pra Frente</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #F3F4F6;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+    }
+    .card {
+      max-width: 420px;
+      width: 100%;
+      background: #FFFFFF;
+      border-radius: 16px;
+      padding: 40px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .logo { display: block; width: 64px; height: 64px; object-fit: contain; margin: 0 auto 24px; }
+    h1 { color: #1F1F1F; font-size: 22px; margin-bottom: 8px; text-align: center; }
+    p.sub { color: #6B7280; font-size: 15px; margin-bottom: 28px; line-height: 1.5; text-align: center; }
+    label { display: block; font-size: 15px; font-weight: 600; color: #374151; margin-bottom: 6px; }
+    .input-wrapper {
+      position: relative;
+      margin-bottom: 16px;
+    }
+    .input-wrapper input {
+      width: 100%;
+      padding: 14px 48px 14px 16px;
+      border: 1.5px solid #E5E7EB;
+      border-radius: 10px;
+      font-size: 16px;
+      color: #1F1F1F;
+      background: #F9FAFB;
+      outline: none;
+    }
+    .input-wrapper input:focus { border-color: #E4AF00; background: #FFFFFF; }
+    .toggle-senha {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      color: #9CA3AF;
+      display: flex;
+      align-items: center;
+      width: auto;
+    }
+    .toggle-senha:hover { color: #6B7280; }
+    button[type="submit"] {
+      width: 100%;
+      background: #E4AF00;
+      color: #1F1F1F;
+      font-size: 17px;
+      font-weight: bold;
+      border: none;
+      border-radius: 12px;
+      padding: 16px;
+      cursor: pointer;
+      margin-top: 8px;
+      min-height: 56px;
+    }
+    button[type="submit"]:disabled { background: #F0D070; cursor: not-allowed; }
+    .resultado {
+      margin-top: 24px;
+      padding: 20px 16px;
+      border-radius: 12px;
+      font-size: 16px;
+      text-align: center;
+      line-height: 1.5;
+      display: none;
+    }
+    .resultado .resultado-icone { font-size: 48px; margin-bottom: 12px; }
+    .resultado .resultado-titulo { font-size: 18px; font-weight: bold; margin-bottom: 8px; }
+    .resultado .resultado-texto { font-size: 15px; }
+    .resultado-sucesso { background: #FFF8E1; }
+    .resultado-sucesso .resultado-titulo { color: #1A6B3C; }
+    .resultado-sucesso .resultado-texto { color: #374151; }
+    .resultado-erro { background: #FDEDEC; }
+    .resultado-erro .resultado-titulo { color: #C0392B; }
+    .resultado-erro .resultado-texto { color: #374151; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <img src="/assets/logo.png" alt="Pra Frente" class="logo" />
+    <h1>Redefinir senha</h1>
+    <p class="sub">Digite sua nova senha abaixo.</p>
+
+    <form id="form">
+      <label for="novaSenha">Nova senha</label>
+      <div class="input-wrapper">
+        <input type="password" id="novaSenha" placeholder="Mínimo 6 caracteres" minlength="6" required />
+        <button type="button" class="toggle-senha" onclick="toggleSenha('novaSenha', this)" aria-label="Mostrar senha">
+          <svg id="icon-novaSenha" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+
+      <label for="confirmar">Confirmar nova senha</label>
+      <div class="input-wrapper">
+        <input type="password" id="confirmar" placeholder="Repita a senha" required />
+        <button type="button" class="toggle-senha" onclick="toggleSenha('confirmar', this)" aria-label="Mostrar confirmação de senha">
+          <svg id="icon-confirmar" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+
+      <button type="submit" id="btn">Salvar nova senha</button>
+    </form>
+
+    <div class="resultado" id="resultado">
+      <div class="resultado-icone" id="resultado-icone"></div>
+      <div class="resultado-titulo" id="resultado-titulo"></div>
+      <div class="resultado-texto" id="resultado-texto"></div>
+    </div>
+  </div>
+
+  <script>
+    var SVG_EYE = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+    var SVG_EYE_OFF = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+
+    function toggleSenha(id, btn) {
+      var input = document.getElementById(id);
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.innerHTML = SVG_EYE_OFF;
+        btn.setAttribute('aria-label', 'Ocultar senha');
+      } else {
+        input.type = 'password';
+        btn.innerHTML = SVG_EYE;
+        btn.setAttribute('aria-label', 'Mostrar senha');
+      }
+    }
+
+    function mostrarResultado(sucesso) {
+      document.getElementById('form').style.display = 'none';
+      var el = document.getElementById('resultado');
+      if (sucesso) {
+        el.className = 'resultado resultado-sucesso';
+        document.getElementById('resultado-icone').textContent = '✅';
+        document.getElementById('resultado-titulo').textContent = 'Senha alterada!';
+        document.getElementById('resultado-texto').textContent = 'Sua senha foi alterada com sucesso. Volte para o app e faça login.';
+      } else {
+        el.className = 'resultado resultado-erro';
+        document.getElementById('resultado-icone').textContent = '❌';
+        document.getElementById('resultado-titulo').textContent = 'Não foi possível alterar';
+        document.getElementById('resultado-texto').textContent = 'Tivemos um problema para alterar sua senha. O link pode ter expirado — solicite uma nova redefinição no app.';
+      }
+      el.style.display = 'block';
+    }
+
+    document.getElementById('form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      var novaSenha = document.getElementById('novaSenha').value;
+      var confirmar = document.getElementById('confirmar').value;
+      var btn = document.getElementById('btn');
+
+      if (novaSenha !== confirmar) {
+        mostrarResultado(false);
+        document.getElementById('resultado-titulo').textContent = 'Senhas não coincidem';
+        document.getElementById('resultado-texto').textContent = 'As senhas digitadas não são iguais. Verifique e tente novamente.';
+        document.getElementById('resultado').style.display = 'block';
+        document.getElementById('resultado').className = 'resultado resultado-erro';
+        document.getElementById('resultado-icone').textContent = '⚠️';
+        document.getElementById('form').style.display = '';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Salvando...';
+
+      try {
+        var res = await fetch('/auth/redefinir-senha', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: '{{token}}', novaSenha: novaSenha })
+        });
+        if (res.ok) {
+          mostrarResultado(true);
+        } else {
+          mostrarResultado(false);
+        }
+      } catch {
+        mostrarResultado(false);
+      }
+    });
+  </script>
+</body>
+</html>

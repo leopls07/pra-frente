@@ -101,6 +101,8 @@ export default function LoginScreen() {
       if (status === 403 && codigo === 'EMAIL_NAO_CONFIRMADO') {
         setEmailNaoConfirmado(true);
         setErro('');
+      } else if (status === 401) {
+        setErro('Email ou senha incorretos.');
       } else {
         setErro(tratarErro(error));
       }

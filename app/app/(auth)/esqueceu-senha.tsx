@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   botaoDesabilitado: { backgroundColor: Colors.primaryDisabled },
-  botaoTexto: { color: Colors.card, fontSize: 18, fontWeight: 'bold' },
+  botaoTexto: { color: Colors.text, fontSize: 18, fontWeight: 'bold' },
   linkVoltar: { alignItems: 'center', paddingVertical: 4 },
   linkVoltarTexto: { fontSize: 15, color: Colors.primary, fontWeight: '600' },
 

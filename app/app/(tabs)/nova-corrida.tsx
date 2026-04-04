@@ -252,6 +252,7 @@ const styles = StyleSheet.create({
     color: Colors.gain,
     borderWidth: 2,
     borderColor: Colors.border,
+    fontVariant: ['tabular-nums'],
   },
   formasPagamento: { flexDirection: 'row', gap: 12 },
   botaoForma: {

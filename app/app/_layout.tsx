@@ -5,14 +5,13 @@ import Toast from 'react-native-toast-message';
 import * as SplashScreen from 'expo-splash-screen';
 import {
   useFonts,
-  Afacad_400Regular,
-  Afacad_500Medium,
-  Afacad_600SemiBold,
-  Afacad_700Bold,
-  Afacad_400Regular_Italic,
-} from '@expo-google-fonts/afacad';
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from '@expo-google-fonts/inter';
 import { useAuthStore } from '../store/useAuthStore';
-import { Fonts } from '../constants/fonts';
+import { fonts } from '../constants/typography';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -20,7 +19,7 @@ SplashScreen.preventAutoHideAsync();
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const TextAny = Text as any;
 TextAny.defaultProps = TextAny.defaultProps ?? {};
-TextAny.defaultProps.style = [TextAny.defaultProps.style, { fontFamily: Fonts.regular }];
+TextAny.defaultProps.style = [TextAny.defaultProps.style, { fontFamily: fonts.regular }];
 
 export default function RootLayout() {
   const { usuario, isLoaded, initialize } = useAuthStore();
@@ -28,11 +27,10 @@ export default function RootLayout() {
   const segments = useSegments();
 
   const [fontsLoaded] = useFonts({
-    Afacad_400Regular,
-    Afacad_500Medium,
-    Afacad_600SemiBold,
-    Afacad_700Bold,
-    Afacad_400Regular_Italic,
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
   });
 
   useEffect(() => {
