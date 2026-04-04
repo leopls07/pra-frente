@@ -7,7 +7,7 @@ const router = Router();
 router.use(authMiddleware);
 
 const abastecimentoSchema = z.object({
-  valor: z.number().positive(),
+  valor: z.number().positive().max(99999.99, 'Valor máximo é R$ 99.999,99.'),
   tipoCombustivel: z.enum(['gasolina', 'etanol']),
   data: z.string().datetime(),
 });

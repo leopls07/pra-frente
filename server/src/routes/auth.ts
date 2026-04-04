@@ -13,23 +13,24 @@ const router = Router();
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const registerSchema = z.object({
-  email: z.string().email('Email inválido.'),
-  password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres.'),
-  name: z.string().min(1, 'Nome é obrigatório.'),
+  email: z.string().email('Email inválido.').max(100, 'Email muito longo.'),
+  password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres.').max(32, 'Senha deve ter no máximo 32 caracteres.'),
+  name: z.string().min(1, 'Nome é obrigatório.').max(32, 'Nome deve ter no máximo 32 caracteres.'),
 });
 
 const loginSchema = z.object({
-  email: z.string().email('Email inválido.'),
-  password: z.string().min(1, 'Senha é obrigatória.'),
+  email: z.string().email('Email inválido.').max(100, 'Email muito longo.'),
+  password: z.string().min(1, 'Senha é obrigatória.').max(32, 'Senha deve ter no máximo 32 caracteres.'),
 });
 
 async function enviarEmailConfirmacao(email: string, name: string, token: string): Promise<void> {
-  const apiUrl = process.env.API_URL ?? 'http://localhost:3000';
+  const apiUrl = process.env.API_URL;
   const link = `${apiUrl}/auth/confirmar-email?token=${token}`;
+  const fromEmail = process.env.EMAIL_FROM || 'Pra Frente <noreply@prafrente.app.br>';
   
   await resend.emails.send({
-    from: 'onboarding@resend.dev',
-    to: 'leonardobento233@gmail.com',
+    from: fromEmail,
+    to: email,
     subject: 'Confirme seu email - Pra Frente',
     html: `
       <!DOCTYPE html>
@@ -206,10 +207,11 @@ router.post('/esqueceu-senha', async (req: Request, res: Response): Promise<void
 
       const apiUrl = process.env.API_URL ?? 'http://localhost:3000';
       const link = `${apiUrl}/auth/redefinir-senha?token=${tokenRedefinicaoSenha}`;
+      const fromEmail = process.env.EMAIL_FROM || 'Pra Frente <noreply@prafrente.app.br>';
 
       await resend.emails.send({
-        from: 'onboarding@resend.dev',
-        to: 'leonardobento233@gmail.com',
+        from: fromEmail,
+        to: email,
         subject: 'Redefinição de senha - Pra Frente',
         html: `
           <!DOCTYPE html>
@@ -271,8 +273,16 @@ router.post('/alterar-senha', authMiddleware, async (req: AuthRequest, res: Resp
     res.status(400).json({ message: 'Informe a senha atual.' });
     return;
   }
+  if (senhaAtual.length > 32) {
+    res.status(400).json({ message: 'Senha deve ter no máximo 32 caracteres.' });
+    return;
+  }
   if (!novaSenha || typeof novaSenha !== 'string' || novaSenha.length < 6) {
     res.status(400).json({ message: 'A nova senha deve ter no mínimo 6 caracteres.' });
+    return;
+  }
+  if (novaSenha.length > 32) {
+    res.status(400).json({ message: 'Senha deve ter no máximo 32 caracteres.' });
     return;
   }
 
@@ -307,6 +317,10 @@ router.post('/redefinir-senha', async (req: Request, res: Response): Promise<voi
   }
   if (!novaSenha || typeof novaSenha !== 'string' || novaSenha.length < 6) {
     res.status(400).json({ message: 'A senha deve ter no mínimo 6 caracteres.' });
+    return;
+  }
+  if (novaSenha.length > 32) {
+    res.status(400).json({ message: 'Senha deve ter no máximo 32 caracteres.' });
     return;
   }
 

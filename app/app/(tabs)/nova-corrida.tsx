@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,7 @@ import {
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import Toast from 'react-native-toast-message';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { api } from '../../services/api';
 import { tratarErro } from '../../utils/tratarErro';
 import { Colors } from '../../constants/colors';
@@ -46,6 +46,16 @@ export default function NovaCorrida() {
   const [salvando, setSalvando] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const [pickerMode, setPickerMode] = useState<'date' | 'time'>('date');
+
+  useFocusEffect(
+    useCallback(() => {
+      setValor('');
+      setFormaPagamento('pix');
+      setData(new Date());
+      setObservacao('');
+      setShowPicker(false);
+    }, [])
+  );
 
   const handleValorChange = (text: string) => {
     setValor(text.replace(/[^0-9]/g, ''));
@@ -126,6 +136,7 @@ export default function NovaCorrida() {
           placeholder="R$ 0,00"
           placeholderTextColor={Colors.textMuted}
           accessibilityLabel="Valor da corrida em reais"
+          maxLength={7}
         />
       </View>
 
@@ -199,6 +210,7 @@ export default function NovaCorrida() {
           multiline
           numberOfLines={3}
           accessibilityLabel="Observação sobre a corrida"
+          maxLength={200}
         />
       </View>
 

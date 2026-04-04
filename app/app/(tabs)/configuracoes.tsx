@@ -122,6 +122,7 @@ export default function ConfiguracoesScreen() {
                   onChangeText={setSenhaAtual}
                   placeholder="Digite sua senha atual"
                   returnKeyType="next"
+                  maxLength={32}
                 />
                 <PasswordInput
                   label="Nova senha"
@@ -129,6 +130,7 @@ export default function ConfiguracoesScreen() {
                   onChangeText={setNovaSenha}
                   placeholder="Mínimo 6 caracteres"
                   returnKeyType="next"
+                  maxLength={32}
                 />
                 <PasswordInput
                   label="Confirmar nova senha"
@@ -137,6 +139,7 @@ export default function ConfiguracoesScreen() {
                   placeholder="Repita a nova senha"
                   returnKeyType="done"
                   onSubmitEditing={handleAlterarSenha}
+                  maxLength={32}
                 />
                 <TouchableOpacity
                   style={[styles.botaoSalvar, salvando && styles.botaoDesabilitado]}

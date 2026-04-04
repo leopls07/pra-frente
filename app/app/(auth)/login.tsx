@@ -204,6 +204,7 @@ export default function LoginScreen() {
                 onChangeText={setNome}
                 autoCapitalize="words"
                 returnKeyType="next"
+                maxLength={32}
               />
             </View>
           )}
@@ -223,6 +224,7 @@ export default function LoginScreen() {
               autoCapitalize="none"
               keyboardType="email-address"
               returnKeyType="next"
+              maxLength={100}
             />
           </View>
 
@@ -233,6 +235,7 @@ export default function LoginScreen() {
             onChangeText={setSenha}
             returnKeyType={modo === 'cadastro' ? 'next' : 'done'}
             onSubmitEditing={modo === 'login' ? handleSubmit : undefined}
+            maxLength={32}
           />
 
           {modo === 'login' && (
@@ -253,6 +256,7 @@ export default function LoginScreen() {
               onChangeText={setConfirmarSenha}
               returnKeyType="done"
               onSubmitEditing={handleSubmit}
+              maxLength={32}
             />
           )}
 

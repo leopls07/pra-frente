@@ -111,6 +111,7 @@ export default function EsqueceuSenhaScreen() {
               returnKeyType="done"
               onSubmitEditing={handleSubmit}
               autoFocus
+              maxLength={100}
             />
           </View>
 

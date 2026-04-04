@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Platform,
 } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { useFocusEffect } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Toast from 'react-native-toast-message';
 import { api } from '../../services/api';
@@ -42,6 +43,15 @@ export default function AbastecimentoScreen() {
   const [salvando, setSalvando] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const [pickerMode, setPickerMode] = useState<'date' | 'time'>('date');
+
+  useFocusEffect(
+    useCallback(() => {
+      setValor('');
+      setTipoCombustivel('gasolina');
+      setData(new Date());
+      setShowPicker(false);
+    }, [])
+  );
 
   const handleValorChange = (text: string) => {
     setValor(text.replace(/[^0-9]/g, ''));
@@ -123,6 +133,7 @@ export default function AbastecimentoScreen() {
           placeholder="R$ 0,00"
           placeholderTextColor={Colors.textMuted}
           accessibilityLabel="Valor do abastecimento em reais"
+          maxLength={7}
         />
       </View>
 
