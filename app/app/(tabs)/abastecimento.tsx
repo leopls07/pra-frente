@@ -133,7 +133,6 @@ export default function AbastecimentoScreen() {
           placeholder="R$ 0,00"
           placeholderTextColor={Colors.textMuted}
           accessibilityLabel="Valor do abastecimento em reais"
-          maxLength={7}
         />
       </View>
 

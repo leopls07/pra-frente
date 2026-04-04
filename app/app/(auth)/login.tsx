@@ -60,7 +60,7 @@ export default function LoginScreen() {
     if (modo === 'cadastro') {
       if (!nome.trim()) return 'Informe seu nome.';
       if (senha.length < 6) return 'Senha deve ter no minimo 6 caracteres.';
-      if (senha !== confirmarSenha) return 'As senhas nao coincidem.';
+      if (senha !== confirmarSenha) return 'As senhas não coincidem.';
     }
     return null;
   };

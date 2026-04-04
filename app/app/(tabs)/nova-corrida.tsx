@@ -136,7 +136,6 @@ export default function NovaCorrida() {
           placeholder="R$ 0,00"
           placeholderTextColor={Colors.textMuted}
           accessibilityLabel="Valor da corrida em reais"
-          maxLength={7}
         />
       </View>
 
