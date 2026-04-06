@@ -103,8 +103,9 @@ export default function RelatoriosScreen() {
     setLoadingAnual(true);
     setRelatorioAnual(null);
     try {
-      const inicio = `${anoAlvo}-01-01T00:00:00.000Z`;
-      const fim = `${anoAlvo}-12-31T23:59:59.999Z`;
+      // Limites em BRT (GMT-3): Jan 1 00:00 BRT = Jan 1 03:00 UTC; Dez 31 23:59 BRT = Jan 1 (próximo ano) 02:59 UTC
+      const inicio = `${anoAlvo}-01-01T03:00:00.000Z`;
+      const fim = `${anoAlvo + 1}-01-01T02:59:59.999Z`;
       const { data } = await api.get<RelatorioDetalhado>(
         `/relatorios/detalhado?inicio=${inicio}&fim=${fim}`
       );

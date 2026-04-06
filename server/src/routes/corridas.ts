@@ -9,7 +9,7 @@ router.use(authMiddleware);
 const corridaSchema = z.object({
   valor: z.number().positive().max(99999.99, 'Valor máximo é R$ 99.999,99.'),
   formaPagamento: z.enum(['pix', 'dinheiro', 'cartao']),
-  data: z.string().datetime(),
+  data: z.string().datetime({ offset: true }),
   observacao: z.string().max(200, 'Observação deve ter no máximo 200 caracteres.').optional(),
 });
 

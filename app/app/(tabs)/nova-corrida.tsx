@@ -14,6 +14,7 @@ import Toast from 'react-native-toast-message';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { api } from '../../services/api';
 import { tratarErro } from '../../utils/tratarErro';
+import { toISOComOffsetBRT } from '../../utils/dataBRT';
 import { Colors } from '../../constants/colors';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -103,7 +104,7 @@ export default function NovaCorrida() {
       await api.post('/corridas', {
         valor: Number(valor) / 100,
         formaPagamento,
-        data: data.toISOString(),
+        data: toISOComOffsetBRT(data),
         observacao: observacao.trim() || undefined,
       });
 

@@ -14,6 +14,7 @@ import * as Haptics from 'expo-haptics';
 import Toast from 'react-native-toast-message';
 import { api } from '../../services/api';
 import { tratarErro } from '../../utils/tratarErro';
+import { toISOComOffsetBRT } from '../../utils/dataBRT';
 import { TipoCombustivel } from '../../types';
 import { Colors } from '../../constants/colors';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -99,7 +100,7 @@ export default function AbastecimentoScreen() {
       await api.post('/abastecimentos', {
         valor: Number(valor) / 100,
         tipoCombustivel,
-        data: data.toISOString(),
+        data: toISOComOffsetBRT(data),
       });
 
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

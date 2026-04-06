@@ -2,32 +2,10 @@ import { Router, Response } from 'express';
 import { Corrida } from '../models/Corrida';
 import { Abastecimento } from '../models/Abastecimento';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
+import { rangeParaPeriodoBRT, dataISOBRT } from '../utils/dataBRT';
 
 const router = Router();
 router.use(authMiddleware);
-
-function rangeParaPeriodo(periodo: string): { inicio: Date; fim: Date } {
-  const agora = new Date();
-  const fim = new Date(agora);
-  fim.setHours(23, 59, 59, 999);
-
-  if (periodo === 'hoje') {
-    const inicio = new Date(agora);
-    inicio.setHours(0, 0, 0, 0);
-    return { inicio, fim };
-  }
-
-  if (periodo === 'semana') {
-    const inicio = new Date(agora);
-    inicio.setDate(agora.getDate() - agora.getDay());
-    inicio.setHours(0, 0, 0, 0);
-    return { inicio, fim };
-  }
-
-  // mes
-  const inicio = new Date(agora.getFullYear(), agora.getMonth(), 1, 0, 0, 0, 0);
-  return { inicio, fim };
-}
 
 router.get('/resumo', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -35,7 +13,7 @@ router.get('/resumo', async (req: AuthRequest, res: Response): Promise<void> => 
 
     const resultados = await Promise.all(
       periodos.map(async (p) => {
-        const { inicio, fim } = rangeParaPeriodo(p);
+        const { inicio, fim } = rangeParaPeriodoBRT(p);
         const [corridas, abastecimentos] = await Promise.all([
           Corrida.find({ userId: req.user!.id, data: { $gte: inicio, $lte: fim } }),
           Abastecimento.find({ userId: req.user!.id, data: { $gte: inicio, $lte: fim } }),
@@ -71,7 +49,7 @@ router.get('/detalhado', async (req: AuthRequest, res: Response): Promise<void> 
       fim = new Date(req.query.fim as string);
     } else {
       const periodo = (req.query.periodo as string) || 'mes';
-      ({ inicio, fim } = rangeParaPeriodo(periodo));
+      ({ inicio, fim } = rangeParaPeriodoBRT(periodo));
     }
 
     const [corridas, abastecimentos] = await Promise.all([
@@ -84,7 +62,7 @@ router.get('/detalhado', async (req: AuthRequest, res: Response): Promise<void> 
     const lucro_liquido = ganho_bruto - total_abastecimento;
     const total_corridas = corridas.length;
 
-    const diasSet = new Set(corridas.map((c) => c.data.toISOString().slice(0, 10)));
+    const diasSet = new Set(corridas.map((c) => dataISOBRT(c.data)));
     const dias_trabalhados = diasSet.size;
 
     const media_por_corrida = total_corridas > 0 ? ganho_bruto / total_corridas : 0;
