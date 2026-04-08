@@ -62,6 +62,14 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="registros"
+        options={{
+          title: 'Registros',
+          tabBarLabel: 'Registros',
+          tabBarIcon: ({ focused }) => icon(focused, 'list', 'list-outline'),
+        }}
+      />
+      <Tabs.Screen
         name="configuracoes"
         options={{ href: null }}
       />

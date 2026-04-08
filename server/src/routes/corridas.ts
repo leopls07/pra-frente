@@ -15,7 +15,7 @@ const corridaSchema = z.object({
 
 router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { inicio, fim } = req.query;
+    const { inicio, fim, page, limit } = req.query;
     const filtro: Record<string, unknown> = { userId: req.user!.id };
 
     if (inicio || fim) {
@@ -24,8 +24,20 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
       if (fim) (filtro.data as Record<string, Date>).$lte = new Date(fim as string);
     }
 
-    const corridas = await Corrida.find(filtro).sort({ data: -1 });
-    res.json(corridas);
+    const limitNum = parseInt(limit as string) || 0;
+
+    if (limitNum > 0) {
+      const pageNum = Math.max(1, parseInt(page as string) || 1);
+      const total = await Corrida.countDocuments(filtro);
+      const corridas = await Corrida.find(filtro)
+        .sort({ data: -1 })
+        .skip((pageNum - 1) * limitNum)
+        .limit(limitNum);
+      res.json({ items: corridas, total, page: pageNum, pages: Math.ceil(total / limitNum) });
+    } else {
+      const corridas = await Corrida.find(filtro).sort({ data: -1 });
+      res.json(corridas);
+    }
   } catch {
     res.status(500).json({ message: 'Erro ao buscar corridas.' });
   }
