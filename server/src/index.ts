@@ -8,6 +8,7 @@ import authRoutes from './routes/auth';
 import corridasRoutes from './routes/corridas';
 import abastecimentosRoutes from './routes/abastecimentos';
 import relatoriosRoutes from './routes/relatorios';
+import metasRoutes from './routes/metas';
 
 const app = express();
 const PORT = process.env.PORT ?? 3000;
@@ -36,6 +37,7 @@ app.use('/auth', authRoutes);
 app.use('/corridas', corridasRoutes);
 app.use('/abastecimentos', abastecimentosRoutes);
 app.use('/relatorios', relatoriosRoutes);
+app.use('/metas', metasRoutes);
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });

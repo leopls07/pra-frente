@@ -38,6 +38,7 @@ interface RelatorioDetalhado {
   media_por_corrida: number;
   media_por_dia: number;
   por_pagamento: { pix: number; dinheiro: number; cartao: number };
+  dias_meta_batida: number | null;
 }
 
 const PERIODOS: { valor: Periodo; label: string }[] = [
@@ -236,6 +237,13 @@ export default function RelatoriosScreen() {
                   {periodoSelecionado !== 'hoje' && (
                     <Linha label="Dias trabalhados" valor={String(detalhe.dias_trabalhados)} />
                   )}
+                  {periodoSelecionado !== 'hoje' && detalhe.dias_meta_batida !== null && (
+                    <Linha
+                      label="Dias com meta batida"
+                      valor={`${detalhe.dias_meta_batida} de ${detalhe.dias_trabalhados} dias`}
+                      cor={detalhe.dias_meta_batida > 0 ? Colors.gain : undefined}
+                    />
+                  )}
                   <Linha label="Média por corrida" valor={fmt(detalhe.media_por_corrida)} />
                   {periodoSelecionado !== 'hoje' && (
                     <Linha label="Média por dia" valor={fmt(detalhe.media_por_dia)} />
@@ -295,6 +303,13 @@ export default function RelatoriosScreen() {
                     <Linha label="Lucro líquido" valor={fmt(relatorioAnual.lucro_liquido)} cor={Colors.gain} destaque />
                     <Linha label="Total de corridas" valor={String(relatorioAnual.total_corridas)} />
                     <Linha label="Dias trabalhados" valor={String(relatorioAnual.dias_trabalhados)} />
+                    {relatorioAnual.dias_meta_batida !== null && (
+                      <Linha
+                        label="Dias com meta batida"
+                        valor={`${relatorioAnual.dias_meta_batida} de ${relatorioAnual.dias_trabalhados} dias`}
+                        cor={relatorioAnual.dias_meta_batida > 0 ? Colors.gain : undefined}
+                      />
+                    )}
                     <Linha label="Média por corrida" valor={fmt(relatorioAnual.media_por_corrida)} />
                     <Linha label="Média por dia" valor={fmt(relatorioAnual.media_por_dia)} />
                     <Linha label="Pix" valor={fmt(relatorioAnual.por_pagamento.pix)} />

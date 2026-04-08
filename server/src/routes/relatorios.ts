@@ -1,6 +1,7 @@
 import { Router, Response } from 'express';
 import { Corrida } from '../models/Corrida';
 import { Abastecimento } from '../models/Abastecimento';
+import { Meta } from '../models/Meta';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { rangeParaPeriodoBRT, dataISOBRT } from '../utils/dataBRT';
 
@@ -52,9 +53,10 @@ router.get('/detalhado', async (req: AuthRequest, res: Response): Promise<void> 
       ({ inicio, fim } = rangeParaPeriodoBRT(periodo));
     }
 
-    const [corridas, abastecimentos] = await Promise.all([
+    const [corridas, abastecimentos, meta] = await Promise.all([
       Corrida.find({ userEmail: req.user!.email, data: { $gte: inicio, $lte: fim } }),
       Abastecimento.find({ userEmail: req.user!.email, data: { $gte: inicio, $lte: fim } }),
+      Meta.findOne({ userId: req.user!.id }),
     ]);
 
     const ganho_bruto = corridas.reduce((acc, c) => acc + c.valor, 0);
@@ -62,8 +64,12 @@ router.get('/detalhado', async (req: AuthRequest, res: Response): Promise<void> 
     const lucro_liquido = ganho_bruto - total_abastecimento;
     const total_corridas = corridas.length;
 
-    const diasSet = new Set(corridas.map((c) => dataISOBRT(c.data)));
-    const dias_trabalhados = diasSet.size;
+    const porDia = new Map<string, number>();
+    for (const c of corridas) {
+      const dia = dataISOBRT(c.data);
+      porDia.set(dia, (porDia.get(dia) ?? 0) + c.valor);
+    }
+    const dias_trabalhados = porDia.size;
 
     const media_por_corrida = total_corridas > 0 ? ganho_bruto / total_corridas : 0;
     const media_por_dia = dias_trabalhados > 0 ? ganho_bruto / dias_trabalhados : 0;
@@ -76,6 +82,14 @@ router.get('/detalhado', async (req: AuthRequest, res: Response): Promise<void> 
       { pix: 0, dinheiro: 0, cartao: 0 }
     );
 
+    let dias_meta_batida: number | null = null;
+    if (meta && meta.metaDiaria > 0) {
+      dias_meta_batida = 0;
+      for (const total of porDia.values()) {
+        if (total >= meta.metaDiaria) dias_meta_batida++;
+      }
+    }
+
     res.json({
       ganho_bruto,
       total_abastecimento,
@@ -85,6 +99,7 @@ router.get('/detalhado', async (req: AuthRequest, res: Response): Promise<void> 
       media_por_corrida,
       media_por_dia,
       por_pagamento,
+      dias_meta_batida,
     });
   } catch {
     res.status(500).json({ message: 'Erro ao gerar relatório detalhado.' });

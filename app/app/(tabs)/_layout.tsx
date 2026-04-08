@@ -73,6 +73,10 @@ export default function TabsLayout() {
         name="configuracoes"
         options={{ href: null }}
       />
+      <Tabs.Screen
+        name="metas"
+        options={{ href: null }}
+      />
     </Tabs>
   );
 }

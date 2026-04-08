@@ -90,8 +90,27 @@ export default function ConfiguracoesScreen() {
         </View>
 
         <View style={styles.body}>
+          {/* Seção Metas */}
+          <Text style={styles.secaoTitulo}>Metas</Text>
+
+          <View style={styles.secao}>
+            <TouchableOpacity
+              style={styles.opcao}
+              onPress={() => router.push('/(tabs)/metas')}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Definir metas financeiras"
+            >
+              <View style={styles.opcaoEsquerda}>
+                <Ionicons name="flag-outline" size={22} color={Colors.text} />
+                <Text style={styles.opcaoTexto}>Definir metas</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={Colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
           {/* Seção Segurança */}
-          <Text style={styles.secaoTitulo}>Segurança</Text>
+          <Text style={[styles.secaoTitulo, { marginTop: 24 }]}>Segurança</Text>
 
           <View style={styles.secao}>
             <TouchableOpacity
@@ -161,6 +180,7 @@ export default function ConfiguracoesScreen() {
 
           {/* Seção Conta */}
           <Text style={[styles.secaoTitulo, { marginTop: 24 }]}>Conta</Text>
+
 
           <View style={styles.secao}>
             <TouchableOpacity

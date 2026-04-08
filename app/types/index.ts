@@ -31,3 +31,14 @@ export interface PaginadoResposta<T> {
   page: number;
   pages: number;
 }
+
+export interface Meta {
+  _id: string;
+  userId: string;
+  metaDiaria: number;
+  diasTrabalhoSemana: number;
+  metaSemanal: number;
+  metaMensal: number;
+  metaSemanalEditada: boolean;
+  metaMensalEditada: boolean;
+}
