@@ -21,6 +21,59 @@ import { PasswordInput } from '../../components/ui/PasswordInput';
 
 type Modo = 'login' | 'cadastro';
 
+const KAV_BEHAVIOR: 'padding' | 'height' = Platform.OS === 'ios' ? 'padding' : 'height';
+
+async function reenviarConfirmacao(
+  email: string,
+  setReenviando: (v: boolean) => void,
+  setReenvioSucesso: (v: boolean) => void,
+): Promise<void> {
+  setReenviando(true);
+  setReenvioSucesso(false);
+  try {
+    await api.post('/auth/reenviar-confirmacao', { email: email.trim() });
+  } catch {
+    // Resposta genérica do servidor — não há erro real a tratar aqui
+  } finally {
+    setReenvioSucesso(true);
+    setReenviando(false);
+  }
+}
+
+type ConfirmacaoEmailBoxProps = Readonly<{
+  reenviando: boolean;
+  reenvioSucesso: boolean;
+  onReenviar: () => void;
+}>;
+
+function ConfirmacaoEmailBox({ reenviando, reenvioSucesso, onReenviar }: ConfirmacaoEmailBoxProps) {
+  return (
+    <View style={confirmacaoStyles.box}>
+      <Text style={confirmacaoStyles.texto}>
+        Confirme seu email antes de acessar. Verifique sua caixa de entrada.
+      </Text>
+      {reenvioSucesso ? (
+        <Text style={confirmacaoStyles.sucesso}>
+          Email reenviado! Verifique sua caixa de entrada.
+        </Text>
+      ) : (
+        <TouchableOpacity
+          style={confirmacaoStyles.botao}
+          onPress={onReenviar}
+          activeOpacity={0.8}
+          disabled={reenviando}
+        >
+          {reenviando ? (
+            <ActivityIndicator color={Colors.primary} />
+          ) : (
+            <Text style={confirmacaoStyles.botaoTexto}>Reenviar email de confirmação</Text>
+          )}
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+}
+
 function validarCampos(
   email: string,
   senha: string,
@@ -29,7 +82,8 @@ function validarCampos(
   confirmarSenha: string,
 ): string | null {
   if (!email.trim()) return 'Informe seu email.';
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return 'Email invalido.';
+  const emailParts = email.trim().split('@');
+  if (emailParts.length !== 2 || !emailParts[0] || !emailParts[1].includes('.')) return 'Email invalido.';
   if (!senha) return 'Informe sua senha.';
   if (modo === 'cadastro') {
     if (!nome.trim()) return 'Informe seu nome.';
@@ -125,24 +179,11 @@ export default function LoginScreen() {
     }
   };
 
-  const handleReenviarConfirmacao = async () => {
-    setReenviando(true);
-    setReenvioSucesso(false);
-    try {
-      await api.post('/auth/reenviar-confirmacao', { email: email.trim() });
-      setReenvioSucesso(true);
-    } catch {
-      // Resposta genérica do servidor — não há erro real a tratar aqui
-      setReenvioSucesso(true);
-    } finally {
-      setReenviando(false);
-    }
-  };
 
   // Tela pós-cadastro: aviso para confirmar email
   if (cadastroRealizado) {
     return (
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <KeyboardAvoidingView style={styles.flex} behavior={KAV_BEHAVIOR}>
         <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
           <Image
             source={require('../../assets/logo_prafrente.png')}
@@ -176,7 +217,7 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={KAV_BEHAVIOR}
     >
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         <Image
@@ -277,29 +318,11 @@ export default function LoginScreen() {
           {erro !== '' && <Text style={styles.erro}>{erro}</Text>}
 
           {emailNaoConfirmado && (
-            <View style={styles.avisoEmailBox}>
-              <Text style={styles.avisoEmailTexto}>
-                Confirme seu email antes de acessar. Verifique sua caixa de entrada.
-              </Text>
-              {reenvioSucesso ? (
-                <Text style={styles.reenvioSucesso}>
-                  Email reenviado! Verifique sua caixa de entrada.
-                </Text>
-              ) : (
-                <TouchableOpacity
-                  style={styles.botaoReenviar}
-                  onPress={handleReenviarConfirmacao}
-                  activeOpacity={0.8}
-                  disabled={reenviando}
-                >
-                  {reenviando ? (
-                    <ActivityIndicator color={Colors.primary} />
-                  ) : (
-                    <Text style={styles.botaoReenviarTexto}>Reenviar email de confirmação</Text>
-                  )}
-                </TouchableOpacity>
-              )}
-            </View>
+            <ConfirmacaoEmailBox
+              reenviando={reenviando}
+              reenvioSucesso={reenvioSucesso}
+              onReenviar={() => reenviarConfirmacao(email, setReenviando, setReenvioSucesso)}
+            />
           )}
 
           <TouchableOpacity
@@ -455,5 +478,42 @@ avisoTitulo: {
   avisoEmail: {
     fontWeight: 'bold',
     color: Colors.text,
+  },
+});
+
+const confirmacaoStyles = StyleSheet.create({
+  box: {
+    backgroundColor: '#FFF7ED',
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#FED7AA',
+    padding: 16,
+    gap: 12,
+  },
+  texto: {
+    fontSize: 15,
+    color: '#92400E',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  botao: {
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    minHeight: 48,
+    justifyContent: 'center',
+  },
+  botaoTexto: {
+    color: Colors.primary,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  sucesso: {
+    fontSize: 14,
+    color: '#16A34A',
+    textAlign: 'center',
+    fontWeight: '600',
   },
 });

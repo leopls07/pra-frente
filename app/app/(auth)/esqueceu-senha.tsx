@@ -30,7 +30,8 @@ export default function EsqueceuSenhaScreen() {
       setErro('Informe seu email.');
       return;
     }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    const emailParts = email.trim().split('@');
+    if (emailParts.length !== 2 || !emailParts[0] || !emailParts[1].includes('.')) {
       setErro('Email inválido.');
       return;
     }

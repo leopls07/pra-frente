@@ -234,7 +234,7 @@ export default function RelatoriosScreen() {
           {loadingDetalhe && (
             <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 24 }} />
           )}
-          {!loadingDetalhe && detalhe && detalhe.total_corridas === 0 && (
+          {!loadingDetalhe && detalhe?.total_corridas === 0 && (
             <Text style={styles.detalheVazio}>Nenhuma corrida registrada neste período.</Text>
           )}
           {!loadingDetalhe && detalhe && detalhe.total_corridas > 0 && (
@@ -298,7 +298,7 @@ export default function RelatoriosScreen() {
             {loadingAnual && (
               <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 20 }} />
             )}
-            {!loadingAnual && relatorioAnual && relatorioAnual.total_corridas === 0 && (
+            {!loadingAnual && relatorioAnual?.total_corridas === 0 && (
               <Text style={styles.detalheVazio}>Nenhuma corrida registrada em {ano}.</Text>
             )}
             {!loadingAnual && relatorioAnual && relatorioAnual.total_corridas > 0 && (

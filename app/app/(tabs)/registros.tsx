@@ -48,6 +48,14 @@ const COMBUSTIVEIS: { valor: TipoCombustivel; label: string; icone: McIcon }[] =
 
 const LIMITE = 20;
 
+interface HistoricoSetters {
+  setCarregando: (v: boolean) => void;
+  setCarregandoMais: (v: boolean) => void;
+  setRegistros: React.Dispatch<React.SetStateAction<(Corrida | Abastecimento)[]>>;
+  setPagina: (v: number) => void;
+  setTotalPaginas: (v: number) => void;
+}
+
 function formatarMoeda(valor: number): string {
   return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
@@ -159,12 +167,9 @@ async function fetchHistorico(
   pagNum: number,
   t: TipoRegistro,
   fd: Date | null,
-  setCarregando: (v: boolean) => void,
-  setCarregandoMais: (v: boolean) => void,
-  setRegistros: React.Dispatch<React.SetStateAction<(Corrida | Abastecimento)[]>>,
-  setPagina: (v: number) => void,
-  setTotalPaginas: (v: number) => void,
+  setters: HistoricoSetters,
 ): Promise<void> {
+  const { setCarregando, setCarregandoMais, setRegistros, setPagina, setTotalPaginas } = setters;
   if (pagNum === 1) setCarregando(true);
   else setCarregandoMais(true);
   try {
@@ -253,6 +258,58 @@ function ItemCard({ item, onPress }: ItemCardProps) {
   );
 }
 
+const PICKER_DISPLAY: 'inline' | 'default' = Platform.OS === 'ios' ? 'inline' : 'default';
+const KAV_BEHAVIOR: 'padding' | 'height' = Platform.OS === 'ios' ? 'padding' : 'height';
+
+function atualizarNaLista(
+  atualizado: Corrida | Abastecimento,
+  aba: Aba,
+  setRegistrosHoje: React.Dispatch<React.SetStateAction<(Corrida | Abastecimento)[]>>,
+  setRegistros: React.Dispatch<React.SetStateAction<(Corrida | Abastecimento)[]>>,
+): void {
+  const substituir = (prev: (Corrida | Abastecimento)[]) =>
+    prev.map((item) => (item._id === atualizado._id ? atualizado : item));
+  if (aba === 'hoje') setRegistrosHoje(substituir);
+  else setRegistros(substituir);
+}
+
+function removerDaLista(
+  id: string,
+  aba: Aba,
+  setRegistrosHoje: React.Dispatch<React.SetStateAction<(Corrida | Abastecimento)[]>>,
+  setRegistros: React.Dispatch<React.SetStateAction<(Corrida | Abastecimento)[]>>,
+): void {
+  const filtrar = (prev: (Corrida | Abastecimento)[]) => prev.filter((item) => item._id !== id);
+  if (aba === 'hoje') setRegistrosHoje(filtrar);
+  else setRegistros(filtrar);
+}
+
+async function executarExclusao(
+  itemSelecionado: Corrida | Abastecimento | null,
+  aba: Aba,
+  setExcluindo: (v: boolean) => void,
+  setRegistrosHoje: React.Dispatch<React.SetStateAction<(Corrida | Abastecimento)[]>>,
+  setRegistros: React.Dispatch<React.SetStateAction<(Corrida | Abastecimento)[]>>,
+  fecharModal: () => void,
+): Promise<void> {
+  if (!itemSelecionado) return;
+  const endpoint = isCorrida(itemSelecionado)
+    ? `/corridas/${itemSelecionado._id}`
+    : `/abastecimentos/${itemSelecionado._id}`;
+  setExcluindo(true);
+  try {
+    await api.delete(endpoint);
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Toast.show({ type: 'success', text1: 'Registro excluído!', position: 'bottom' });
+    removerDaLista(itemSelecionado._id, aba, setRegistrosHoje, setRegistros);
+    fecharModal();
+  } catch (error) {
+    Toast.show({ type: 'error', text1: tratarErro(error), position: 'bottom' });
+  } finally {
+    setExcluindo(false);
+  }
+}
+
 export default function RegistrosScreen() {
   const [aba, setAba] = useState<Aba>('hoje');
   const [tipo, setTipo] = useState<TipoRegistro>('corridas');
@@ -302,10 +359,9 @@ export default function RegistrosScreen() {
     t: TipoRegistro = tipoRef.current,
     fd: Date | null = filtroDataRef.current,
   ) {
-    await fetchHistorico(
-      pagNum, t, fd,
+    await fetchHistorico(pagNum, t, fd, {
       setCarregando, setCarregandoMais, setRegistros, setPagina, setTotalPaginas,
-    );
+    });
   }
 
   useFocusEffect(
@@ -412,7 +468,7 @@ export default function RegistrosScreen() {
       const { data: atualizado } = await api.put<Corrida | Abastecimento>(endpoint, body);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Toast.show({ type: 'success', text1: 'Registro atualizado!', position: 'bottom' });
-      atualizarNaLista(atualizado);
+      atualizarNaLista(atualizado, abaRef.current, setRegistrosHoje, setRegistros);
       fecharModal();
     } catch (error) {
       Toast.show({ type: 'error', text1: tratarErro(error), position: 'bottom' });
@@ -424,42 +480,14 @@ export default function RegistrosScreen() {
   function confirmarExclusao() {
     Alert.alert('Excluir registro', 'Tem certeza que deseja excluir este registro?', [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Excluir', style: 'destructive', onPress: executarExclusao },
+      {
+        text: 'Excluir',
+        style: 'destructive',
+        onPress: () => executarExclusao(itemSelecionado, abaRef.current, setExcluindo, setRegistrosHoje, setRegistros, fecharModal),
+      },
     ]);
   }
 
-  async function executarExclusao() {
-    if (!itemSelecionado) return;
-    const endpoint = isCorrida(itemSelecionado)
-      ? `/corridas/${itemSelecionado._id}`
-      : `/abastecimentos/${itemSelecionado._id}`;
-
-    setExcluindo(true);
-    try {
-      await api.delete(endpoint);
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Toast.show({ type: 'success', text1: 'Registro excluído!', position: 'bottom' });
-      removerDaLista(itemSelecionado._id);
-      fecharModal();
-    } catch (error) {
-      Toast.show({ type: 'error', text1: tratarErro(error), position: 'bottom' });
-    } finally {
-      setExcluindo(false);
-    }
-  }
-
-  function atualizarNaLista(atualizado: Corrida | Abastecimento) {
-    const substituir = (prev: (Corrida | Abastecimento)[]) =>
-      prev.map((item) => (item._id === atualizado._id ? atualizado : item));
-    if (abaRef.current === 'hoje') setRegistrosHoje(substituir);
-    else setRegistros(substituir);
-  }
-
-  function removerDaLista(id: string) {
-    const filtrar = (prev: (Corrida | Abastecimento)[]) => prev.filter((item) => item._id !== id);
-    if (abaRef.current === 'hoje') setRegistrosHoje(filtrar);
-    else setRegistros(filtrar);
-  }
 
   // ── Edit date picker ──────────────────────────────────────────────────────
 
@@ -562,7 +590,7 @@ export default function RegistrosScreen() {
           <DateTimePicker
             value={filtroData ?? new Date()}
             mode="date"
-            display={Platform.OS === 'ios' ? 'inline' : 'default'}
+            display={PICKER_DISPLAY}
             onChange={handleFiltroDataChange}
             maximumDate={new Date()}
             locale="pt-BR"
@@ -604,7 +632,7 @@ export default function RegistrosScreen() {
       <Modal visible={modalVisivel} transparent animationType="slide" onRequestClose={fecharModal}>
         <View style={styles.modalOverlay}>
           <TouchableOpacity style={styles.modalFundo} activeOpacity={1} onPress={fecharModal} />
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <KeyboardAvoidingView behavior={KAV_BEHAVIOR}>
             <View style={styles.modalContainer}>
               <ScrollView
                 showsVerticalScrollIndicator={false}
@@ -835,7 +863,7 @@ export default function RegistrosScreen() {
                         <DateTimePicker
                           value={editData}
                           mode={editPickerMode}
-                          display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                          display={PICKER_DISPLAY}
                           onChange={onEditPickerChange}
                           maximumDate={new Date()}
                           locale="pt-BR"
