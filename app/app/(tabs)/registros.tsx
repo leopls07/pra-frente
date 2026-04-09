@@ -33,8 +33,7 @@ import {
 
 type Aba = 'hoje' | 'historico';
 type TipoRegistro = 'corridas' | 'abastecimentos';
-type Registro = Registro;
-type RegistroOuNull = Registro | null;
+type Registro = Corrida | Abastecimento;
 type McIcon = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
 const FORMAS_PAG: { valor: FormaPagamento; label: string; icone: McIcon }[] = [
@@ -53,10 +52,16 @@ const LIMITE = 20;
 interface HistoricoSetters {
   setCarregando: (v: boolean) => void;
   setCarregandoMais: (v: boolean) => void;
-  setRegistros: React.Dispatch<React.SetStateAction<(Registro)[]>>;
+  setRegistros: React.Dispatch<React.SetStateAction<Registro[]>>;
   setPagina: (v: number) => void;
   setTotalPaginas: (v: number) => void;
 }
+
+interface HojeSetters {
+  setCarregandoHoje: (v: boolean) => void;
+  setRegistrosHoje: React.Dispatch<React.SetStateAction<Registro[]>>;
+}
+
 
 function formatarMoeda(valor: number): string {
   return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -122,7 +127,7 @@ function isCorrida(item: Registro): item is Corrida {
 
 function getTituloModal(
   modoEdicao: boolean,
-  item: RegistroOuNull,
+  item: Registro | null,
 ): string {
   if (modoEdicao) return 'Editar registro';
   if (item && isCorrida(item)) return 'Corrida';
@@ -367,7 +372,7 @@ async function salvarEdicao(params: SalvarEdicaoParams): Promise<void> {
 }
 
 async function executarExclusao(
-  itemSelecionado: RegistroOuNull,
+  itemSelecionado: Registro | null,
   aba: Aba,
   setExcluindo: (v: boolean) => void,
   setRegistrosHoje: React.Dispatch<React.SetStateAction<(Registro)[]>>,
@@ -390,6 +395,80 @@ async function executarExclusao(
   } finally {
     setExcluindo(false);
   }
+}
+
+function resolverAba(
+  aba: Aba,
+  tipo: TipoRegistro,
+  filtroData: Date | null,
+  hojeSetters: HojeSetters,
+  historicoSetters: HistoricoSetters,
+): void {
+  if (aba === 'hoje')
+    fetchHoje(tipo, hojeSetters.setCarregandoHoje, hojeSetters.setRegistrosHoje);
+  else
+    fetchHistorico(1, tipo, filtroData, historicoSetters);
+}
+
+function aplicarMudancaAba(
+  novaAba: Aba,
+  abaRef: { current: Aba },
+  setAba: (v: Aba) => void,
+  tipo: TipoRegistro,
+  filtroData: Date | null,
+  hojeSetters: HojeSetters,
+  historicoSetters: HistoricoSetters,
+): void {
+  abaRef.current = novaAba;
+  setAba(novaAba);
+  resolverAba(novaAba, tipo, filtroData, hojeSetters, historicoSetters);
+}
+
+function aplicarMudancaTipo(
+  novoTipo: TipoRegistro,
+  tipoRef: { current: TipoRegistro },
+  aba: Aba,
+  filtroData: Date | null,
+  setTipo: (v: TipoRegistro) => void,
+  hojeSetters: HojeSetters,
+  historicoSetters: HistoricoSetters,
+): void {
+  tipoRef.current = novoTipo;
+  setTipo(novoTipo);
+  hojeSetters.setRegistrosHoje([]);
+  historicoSetters.setRegistros([]);
+  resolverAba(aba, novoTipo, filtroData, hojeSetters, historicoSetters);
+}
+
+function aplicarFiltroData(
+  date: Date | undefined,
+  filtroDataRef: { current: Date | null },
+  setFiltroData: (v: Date | null) => void,
+  setShowFiltroDatePicker: (v: boolean) => void,
+  tipo: TipoRegistro,
+  historicoSetters: HistoricoSetters,
+): void {
+  if (Platform.OS === 'android') setShowFiltroDatePicker(false);
+  if (date) {
+    filtroDataRef.current = date;
+    setFiltroData(date);
+    fetchHistorico(1, tipo, date, historicoSetters);
+  }
+}
+
+function aplicarEditPicker(
+  selected: Date | undefined,
+  editPickerMode: 'date' | 'time',
+  editData: Date,
+  setEditData: (v: Date) => void,
+  setEditPickerMode: (v: 'date' | 'time') => void,
+  setShowEditDatePicker: (v: boolean) => void,
+): void {
+  if (!selected) { setShowEditDatePicker(false); return; }
+  const { novaData, novoMode, fechar } = calcularEditData(selected, editPickerMode, editData);
+  setEditData(novaData);
+  if (novoMode) setEditPickerMode(novoMode);
+  if (fechar) setShowEditDatePicker(false);
 }
 
 export default function RegistrosScreen() {
@@ -415,7 +494,7 @@ export default function RegistrosScreen() {
   const filtroDataRef = useRef<Date | null>(null);
 
   // Modal de detalhe / edição
-  const [itemSelecionado, setItemSelecionado] = useState<RegistroOuNull>(null);
+  const [itemSelecionado, setItemSelecionado] = useState<Registro | null>(null);
   const [modalVisivel, setModalVisivel] = useState(false);
   const [modoEdicao, setModoEdicao] = useState(false);
 
@@ -430,66 +509,44 @@ export default function RegistrosScreen() {
   const [showEditDatePicker, setShowEditDatePicker] = useState(false);
   const [editPickerMode, setEditPickerMode] = useState<'date' | 'time'>('date');
 
+  // ── Setter bundles (built once, passed to module-level helpers) ─────────────
+
+  const hojeSetters: HojeSetters = { setCarregandoHoje, setRegistrosHoje };
+  const historicoSetters: HistoricoSetters = {
+    setCarregando, setCarregandoMais, setRegistros, setPagina, setTotalPaginas,
+  };
+
   // ── Carregamento de dados ─────────────────────────────────────────────────
-
-  async function carregarHoje(t: TipoRegistro = tipoRef.current) {
-    await fetchHoje(t, setCarregandoHoje, setRegistrosHoje);
-  }
-
-  async function carregarHistorico(
-    pagNum = 1,
-    t: TipoRegistro = tipoRef.current,
-    fd: Date | null = filtroDataRef.current,
-  ) {
-    await fetchHistorico(pagNum, t, fd, {
-      setCarregando, setCarregandoMais, setRegistros, setPagina, setTotalPaginas,
-    });
-  }
 
   useFocusEffect(
     useCallback(() => {
-      if (abaRef.current === 'hoje') carregarHoje();
-      else carregarHistorico(1);
+      resolverAba(abaRef.current, tipoRef.current, filtroDataRef.current, hojeSetters, historicoSetters);
     }, []),
   );
 
   // ── Handlers de navegação interna ─────────────────────────────────────────
 
   function handleMudarAba(novaAba: Aba) {
-    abaRef.current = novaAba;
-    setAba(novaAba);
-    if (novaAba === 'hoje') carregarHoje();
-    else carregarHistorico(1);
+    aplicarMudancaAba(novaAba, abaRef, setAba, tipoRef.current, filtroDataRef.current, hojeSetters, historicoSetters);
   }
 
   function handleMudarTipo(novoTipo: TipoRegistro) {
-    tipoRef.current = novoTipo;
-    setTipo(novoTipo);
-    setRegistrosHoje([]);
-    setRegistros([]);
-    if (abaRef.current === 'hoje') carregarHoje(novoTipo);
-    else carregarHistorico(1, novoTipo, filtroDataRef.current);
+    aplicarMudancaTipo(novoTipo, tipoRef, aba, filtroDataRef.current, setTipo, hojeSetters, historicoSetters);
   }
 
   function handleFiltroDataChange(_event: DateTimePickerEvent, date?: Date) {
-    if (Platform.OS === 'android') setShowFiltroDatePicker(false);
-    if (date) {
-      filtroDataRef.current = date;
-      setFiltroData(date);
-      carregarHistorico(1, tipoRef.current, date);
-    }
+    aplicarFiltroData(date, filtroDataRef, setFiltroData, setShowFiltroDatePicker, tipoRef.current, historicoSetters);
   }
 
   function limparFiltroData() {
     filtroDataRef.current = null;
     setFiltroData(null);
-    carregarHistorico(1, tipoRef.current, null);
+    fetchHistorico(1, tipoRef.current, null, historicoSetters);
   }
 
   function carregarMais() {
-    if (pagina < totalPaginas && !carregandoMais) {
-      carregarHistorico(pagina + 1);
-    }
+    if (pagina < totalPaginas && !carregandoMais)
+      fetchHistorico(pagina + 1, tipoRef.current, filtroDataRef.current, historicoSetters);
   }
 
   // ── Modal ─────────────────────────────────────────────────────────────────
@@ -529,14 +586,7 @@ export default function RegistrosScreen() {
   }
 
   function onEditPickerChange(_event: DateTimePickerEvent, selected?: Date) {
-    if (!selected) {
-      setShowEditDatePicker(false);
-      return;
-    }
-    const { novaData, novoMode, fechar } = calcularEditData(selected, editPickerMode, editData);
-    setEditData(novaData);
-    if (novoMode) setEditPickerMode(novoMode);
-    if (fechar) setShowEditDatePicker(false);
+    aplicarEditPicker(selected, editPickerMode, editData, setEditData, setEditPickerMode, setShowEditDatePicker);
   }
 
   // ── Render helpers ────────────────────────────────────────────────────────
