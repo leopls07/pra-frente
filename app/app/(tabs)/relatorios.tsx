@@ -52,6 +52,62 @@ const ANO_ATUAL = new Date().getFullYear();
 const fmt = (valor: number) =>
   valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+async function fetchResumo(
+  setLoadingResumo: (v: boolean) => void,
+  setResumo: (v: ResumoGeral) => void,
+  setPeriodoSelecionado: (v: Periodo | null) => void,
+  setDetalhe: (v: RelatorioDetalhado | null) => void,
+): Promise<void> {
+  setLoadingResumo(true);
+  setPeriodoSelecionado(null);
+  setDetalhe(null);
+  try {
+    const { data } = await api.get<ResumoGeral>('/relatorios/resumo');
+    setResumo(data);
+  } catch (error: unknown) {
+    Toast.show({ type: 'error', text1: tratarErro(error), position: 'bottom' });
+  } finally {
+    setLoadingResumo(false);
+  }
+}
+
+async function fetchAnual(
+  anoAlvo: number,
+  setLoadingAnual: (v: boolean) => void,
+  setRelatorioAnual: (v: RelatorioDetalhado | null) => void,
+): Promise<void> {
+  setLoadingAnual(true);
+  setRelatorioAnual(null);
+  try {
+    const inicio = `${anoAlvo}-01-01T03:00:00.000Z`;
+    const fim = `${anoAlvo + 1}-01-01T02:59:59.999Z`;
+    const { data } = await api.get<RelatorioDetalhado>(
+      `/relatorios/detalhado?inicio=${inicio}&fim=${fim}`
+    );
+    setRelatorioAnual(data);
+  } catch (error: unknown) {
+    Toast.show({ type: 'error', text1: tratarErro(error), position: 'bottom' });
+  } finally {
+    setLoadingAnual(false);
+  }
+}
+
+function textoCompartilharRelatorio(titulo: string, detalhe: RelatorioDetalhado): string {
+  return (
+    `📊 ${titulo}\n\n` +
+    `💰 Ganho bruto: ${fmt(detalhe.ganho_bruto)}\n` +
+    `⛽ Abastecimentos: ${fmt(detalhe.total_abastecimento)}\n` +
+    `✅ Lucro líquido: ${fmt(detalhe.lucro_liquido)}\n\n` +
+    `🚕 Corridas: ${detalhe.total_corridas}\n` +
+    `📅 Dias trabalhados: ${detalhe.dias_trabalhados}\n` +
+    `📈 Média por corrida: ${fmt(detalhe.media_por_corrida)}\n` +
+    `📈 Média por dia: ${fmt(detalhe.media_por_dia)}\n\n` +
+    `💸 Pix: ${fmt(detalhe.por_pagamento.pix)}\n` +
+    `💵 Dinheiro: ${fmt(detalhe.por_pagamento.dinheiro)}\n` +
+    `💳 Cartão: ${fmt(detalhe.por_pagamento.cartao)}`
+  );
+}
+
 export default function RelatoriosScreen() {
   const [resumo, setResumo] = useState<ResumoGeral | null>(null);
   const [loadingResumo, setLoadingResumo] = useState(true);
@@ -65,15 +121,7 @@ export default function RelatoriosScreen() {
   const [loadingAnual, setLoadingAnual] = useState(false);
 
   const carregarResumo = useCallback(() => {
-    setLoadingResumo(true);
-    setPeriodoSelecionado(null);
-    setDetalhe(null);
-    api.get<ResumoGeral>('/relatorios/resumo')
-      .then(({ data }) => setResumo(data))
-      .catch((error: unknown) => {
-        Toast.show({ type: 'error', text1: tratarErro(error), position: 'bottom' });
-      })
-      .finally(() => setLoadingResumo(false));
+    fetchResumo(setLoadingResumo, setResumo, setPeriodoSelecionado, setDetalhe);
   }, []);
 
   useEffect(() => { carregarResumo(); }, []);
@@ -101,21 +149,8 @@ export default function RelatoriosScreen() {
   };
 
   const carregarAnual = async (anoAlvo: number) => {
-    setLoadingAnual(true);
-    setRelatorioAnual(null);
-    try {
-      // Limites em BRT (GMT-3): Jan 1 00:00 BRT = Jan 1 03:00 UTC; Dez 31 23:59 BRT = Jan 1 (próximo ano) 02:59 UTC
-      const inicio = `${anoAlvo}-01-01T03:00:00.000Z`;
-      const fim = `${anoAlvo + 1}-01-01T02:59:59.999Z`;
-      const { data } = await api.get<RelatorioDetalhado>(
-        `/relatorios/detalhado?inicio=${inicio}&fim=${fim}`
-      );
-      setRelatorioAnual(data);
-    } catch (error: unknown) {
-      Toast.show({ type: 'error', text1: tratarErro(error), position: 'bottom' });
-    } finally {
-      setLoadingAnual(false);
-    }
+    // Limites em BRT (GMT-3): Jan 1 00:00 BRT = Jan 1 03:00 UTC; Dez 31 23:59 BRT = Jan 1 (próximo ano) 02:59 UTC
+    await fetchAnual(anoAlvo, setLoadingAnual, setRelatorioAnual);
   };
 
   const alterarAno = (delta: number) => {
@@ -132,37 +167,13 @@ export default function RelatoriosScreen() {
 
   const compartilhar = async () => {
     if (!detalhe || !periodoSelecionado) return;
-    const label = PERIODOS.find((p) => p.valor === periodoSelecionado)?.label;
-    const texto =
-      `📊 Relatório — ${label}\n\n` +
-      `💰 Ganho bruto: ${fmt(detalhe.ganho_bruto)}\n` +
-      `⛽ Abastecimentos: ${fmt(detalhe.total_abastecimento)}\n` +
-      `✅ Lucro líquido: ${fmt(detalhe.lucro_liquido)}\n\n` +
-      `🚕 Corridas: ${detalhe.total_corridas}\n` +
-      `📅 Dias trabalhados: ${detalhe.dias_trabalhados}\n` +
-      `📈 Média por corrida: ${fmt(detalhe.media_por_corrida)}\n` +
-      `📈 Média por dia: ${fmt(detalhe.media_por_dia)}\n\n` +
-      `💸 Pix: ${fmt(detalhe.por_pagamento.pix)}\n` +
-      `💵 Dinheiro: ${fmt(detalhe.por_pagamento.dinheiro)}\n` +
-      `💳 Cartão: ${fmt(detalhe.por_pagamento.cartao)}`;
-    await Share.share({ message: texto });
+    const label = PERIODOS.find((p) => p.valor === periodoSelecionado)?.label ?? '';
+    await Share.share({ message: textoCompartilharRelatorio(`Relatório — ${label}`, detalhe) });
   };
 
   const compartilharAnual = async () => {
     if (!relatorioAnual) return;
-    const texto =
-      `📊 Relatório Anual — ${ano}\n\n` +
-      `💰 Ganho bruto: ${fmt(relatorioAnual.ganho_bruto)}\n` +
-      `⛽ Abastecimentos: ${fmt(relatorioAnual.total_abastecimento)}\n` +
-      `✅ Lucro líquido: ${fmt(relatorioAnual.lucro_liquido)}\n\n` +
-      `🚕 Corridas: ${relatorioAnual.total_corridas}\n` +
-      `📅 Dias trabalhados: ${relatorioAnual.dias_trabalhados}\n` +
-      `📈 Média por corrida: ${fmt(relatorioAnual.media_por_corrida)}\n` +
-      `📈 Média por dia: ${fmt(relatorioAnual.media_por_dia)}\n\n` +
-      `💸 Pix: ${fmt(relatorioAnual.por_pagamento.pix)}\n` +
-      `💵 Dinheiro: ${fmt(relatorioAnual.por_pagamento.dinheiro)}\n` +
-      `💳 Cartão: ${fmt(relatorioAnual.por_pagamento.cartao)}`;
-    await Share.share({ message: texto });
+    await Share.share({ message: textoCompartilharRelatorio(`Relatório Anual — ${ano}`, relatorioAnual) });
   };
 
   return (
@@ -222,47 +233,47 @@ export default function RelatoriosScreen() {
             {PERIODOS.find((p) => p.valor === periodoSelecionado)?.label}
           </Text>
 
-          {loadingDetalhe ? (
+          {loadingDetalhe && (
             <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 24 }} />
-          ) : detalhe ? (
-            detalhe.total_corridas === 0 ? (
-              <Text style={styles.detalheVazio}>Nenhuma corrida registrada neste período.</Text>
-            ) : (
-              <>
-                <View style={styles.linhas}>
-                  <Linha label="Ganho bruto" valor={fmt(detalhe.ganho_bruto)} cor={Colors.gain} />
-                  <Linha label="Abastecimentos" valor={fmt(detalhe.total_abastecimento)} cor={Colors.cost} />
-                  <Linha label="Lucro líquido" valor={fmt(detalhe.lucro_liquido)} cor={Colors.gain} destaque />
-                  <Linha label="Total de corridas" valor={String(detalhe.total_corridas)} />
-                  {periodoSelecionado !== 'hoje' && (
-                    <Linha label="Dias trabalhados" valor={String(detalhe.dias_trabalhados)} />
-                  )}
-                  {periodoSelecionado !== 'hoje' && detalhe.dias_meta_batida !== null && (
-                    <Linha
-                      label="Dias com meta batida"
-                      valor={`${detalhe.dias_meta_batida} de ${detalhe.dias_trabalhados} dias`}
-                      cor={detalhe.dias_meta_batida > 0 ? Colors.gain : undefined}
-                    />
-                  )}
-                  <Linha label="Média por corrida" valor={fmt(detalhe.media_por_corrida)} />
-                  {periodoSelecionado !== 'hoje' && (
-                    <Linha label="Média por dia" valor={fmt(detalhe.media_por_dia)} />
-                  )}
-                  <Linha label="Pix" valor={fmt(detalhe.por_pagamento.pix)} />
-                  <Linha label="Dinheiro" valor={fmt(detalhe.por_pagamento.dinheiro)} />
-                  <Linha label="Cartão" valor={fmt(detalhe.por_pagamento.cartao)} />
-                </View>
-                <TouchableOpacity
-                  style={styles.botaoCompartilhar}
-                  onPress={compartilhar}
-                  accessibilityLabel="Compartilhar relatório"
-                  accessibilityRole="button"
-                >
-                  <Text style={styles.botaoCompartilharTexto}>Compartilhar</Text>
-                </TouchableOpacity>
-              </>
-            )
-          ) : null}
+          )}
+          {!loadingDetalhe && detalhe && detalhe.total_corridas === 0 && (
+            <Text style={styles.detalheVazio}>Nenhuma corrida registrada neste período.</Text>
+          )}
+          {!loadingDetalhe && detalhe && detalhe.total_corridas > 0 && (
+            <>
+              <View style={styles.linhas}>
+                <Linha label="Ganho bruto" valor={fmt(detalhe.ganho_bruto)} cor={Colors.gain} />
+                <Linha label="Abastecimentos" valor={fmt(detalhe.total_abastecimento)} cor={Colors.cost} />
+                <Linha label="Lucro líquido" valor={fmt(detalhe.lucro_liquido)} cor={Colors.gain} destaque />
+                <Linha label="Total de corridas" valor={String(detalhe.total_corridas)} />
+                {periodoSelecionado !== 'hoje' && (
+                  <Linha label="Dias trabalhados" valor={String(detalhe.dias_trabalhados)} />
+                )}
+                {periodoSelecionado !== 'hoje' && detalhe.dias_meta_batida !== null && (
+                  <Linha
+                    label="Dias com meta batida"
+                    valor={`${detalhe.dias_meta_batida} de ${detalhe.dias_trabalhados} dias`}
+                    cor={detalhe.dias_meta_batida > 0 ? Colors.gain : undefined}
+                  />
+                )}
+                <Linha label="Média por corrida" valor={fmt(detalhe.media_por_corrida)} />
+                {periodoSelecionado !== 'hoje' && (
+                  <Linha label="Média por dia" valor={fmt(detalhe.media_por_dia)} />
+                )}
+                <Linha label="Pix" valor={fmt(detalhe.por_pagamento.pix)} />
+                <Linha label="Dinheiro" valor={fmt(detalhe.por_pagamento.dinheiro)} />
+                <Linha label="Cartão" valor={fmt(detalhe.por_pagamento.cartao)} />
+              </View>
+              <TouchableOpacity
+                style={styles.botaoCompartilhar}
+                onPress={compartilhar}
+                accessibilityLabel="Compartilhar relatório"
+                accessibilityRole="button"
+              >
+                <Text style={styles.botaoCompartilharTexto}>Compartilhar</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       )}
 
@@ -290,43 +301,43 @@ export default function RelatoriosScreen() {
               </TouchableOpacity>
             </View>
 
-            {loadingAnual ? (
+            {loadingAnual && (
               <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 20 }} />
-            ) : relatorioAnual ? (
-              relatorioAnual.total_corridas === 0 ? (
-                <Text style={styles.detalheVazio}>Nenhuma corrida registrada em {ano}.</Text>
-              ) : (
-                <>
-                  <View style={styles.linhas}>
-                    <Linha label="Ganho bruto" valor={fmt(relatorioAnual.ganho_bruto)} cor={Colors.gain} />
-                    <Linha label="Abastecimentos" valor={fmt(relatorioAnual.total_abastecimento)} cor={Colors.cost} />
-                    <Linha label="Lucro líquido" valor={fmt(relatorioAnual.lucro_liquido)} cor={Colors.gain} destaque />
-                    <Linha label="Total de corridas" valor={String(relatorioAnual.total_corridas)} />
-                    <Linha label="Dias trabalhados" valor={String(relatorioAnual.dias_trabalhados)} />
-                    {relatorioAnual.dias_meta_batida !== null && (
-                      <Linha
-                        label="Dias com meta batida"
-                        valor={`${relatorioAnual.dias_meta_batida} de ${relatorioAnual.dias_trabalhados} dias`}
-                        cor={relatorioAnual.dias_meta_batida > 0 ? Colors.gain : undefined}
-                      />
-                    )}
-                    <Linha label="Média por corrida" valor={fmt(relatorioAnual.media_por_corrida)} />
-                    <Linha label="Média por dia" valor={fmt(relatorioAnual.media_por_dia)} />
-                    <Linha label="Pix" valor={fmt(relatorioAnual.por_pagamento.pix)} />
-                    <Linha label="Dinheiro" valor={fmt(relatorioAnual.por_pagamento.dinheiro)} />
-                    <Linha label="Cartão" valor={fmt(relatorioAnual.por_pagamento.cartao)} />
-                  </View>
-                  <TouchableOpacity
-                    style={styles.botaoCompartilhar}
-                    onPress={compartilharAnual}
-                    accessibilityLabel="Compartilhar relatório anual"
-                    accessibilityRole="button"
-                  >
-                    <Text style={styles.botaoCompartilharTexto}>Compartilhar</Text>
-                  </TouchableOpacity>
-                </>
-              )
-            ) : null}
+            )}
+            {!loadingAnual && relatorioAnual && relatorioAnual.total_corridas === 0 && (
+              <Text style={styles.detalheVazio}>Nenhuma corrida registrada em {ano}.</Text>
+            )}
+            {!loadingAnual && relatorioAnual && relatorioAnual.total_corridas > 0 && (
+              <>
+                <View style={styles.linhas}>
+                  <Linha label="Ganho bruto" valor={fmt(relatorioAnual.ganho_bruto)} cor={Colors.gain} />
+                  <Linha label="Abastecimentos" valor={fmt(relatorioAnual.total_abastecimento)} cor={Colors.cost} />
+                  <Linha label="Lucro líquido" valor={fmt(relatorioAnual.lucro_liquido)} cor={Colors.gain} destaque />
+                  <Linha label="Total de corridas" valor={String(relatorioAnual.total_corridas)} />
+                  <Linha label="Dias trabalhados" valor={String(relatorioAnual.dias_trabalhados)} />
+                  {relatorioAnual.dias_meta_batida !== null && (
+                    <Linha
+                      label="Dias com meta batida"
+                      valor={`${relatorioAnual.dias_meta_batida} de ${relatorioAnual.dias_trabalhados} dias`}
+                      cor={relatorioAnual.dias_meta_batida > 0 ? Colors.gain : undefined}
+                    />
+                  )}
+                  <Linha label="Média por corrida" valor={fmt(relatorioAnual.media_por_corrida)} />
+                  <Linha label="Média por dia" valor={fmt(relatorioAnual.media_por_dia)} />
+                  <Linha label="Pix" valor={fmt(relatorioAnual.por_pagamento.pix)} />
+                  <Linha label="Dinheiro" valor={fmt(relatorioAnual.por_pagamento.dinheiro)} />
+                  <Linha label="Cartão" valor={fmt(relatorioAnual.por_pagamento.cartao)} />
+                </View>
+                <TouchableOpacity
+                  style={styles.botaoCompartilhar}
+                  onPress={compartilharAnual}
+                  accessibilityLabel="Compartilhar relatório anual"
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.botaoCompartilharTexto}>Compartilhar</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         )}
         </View>

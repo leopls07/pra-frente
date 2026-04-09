@@ -108,6 +108,151 @@ function isCorrida(item: Corrida | Abastecimento): item is Corrida {
   return 'formaPagamento' in item;
 }
 
+// ── Module-level helpers ──────────────────────────────────────────────────
+
+function getTituloModal(
+  modoEdicao: boolean,
+  item: Corrida | Abastecimento | null,
+): string {
+  if (modoEdicao) return 'Editar registro';
+  if (item && isCorrida(item)) return 'Corrida';
+  return 'Abastecimento';
+}
+
+function calcularEditData(
+  selected: Date,
+  mode: 'date' | 'time',
+  currentEditData: Date,
+): { novaData: Date; novoMode?: 'time'; fechar: boolean } {
+  if (Platform.OS !== 'android') return { novaData: selected, fechar: false };
+  if (mode === 'date') {
+    const nova = new Date(selected);
+    nova.setHours(currentEditData.getHours(), currentEditData.getMinutes());
+    return { novaData: nova, novoMode: 'time', fechar: false };
+  }
+  const nova = new Date(currentEditData);
+  nova.setHours(selected.getHours(), selected.getMinutes());
+  return { novaData: nova, fechar: true };
+}
+
+async function fetchHoje(
+  t: TipoRegistro,
+  setCarregandoHoje: (v: boolean) => void,
+  setRegistrosHoje: (v: (Corrida | Abastecimento)[]) => void,
+): Promise<void> {
+  setCarregandoHoje(true);
+  try {
+    const { inicio, fim } = rangeHoje();
+    const endpoint = t === 'corridas' ? '/corridas' : '/abastecimentos';
+    const { data } = await api.get<(Corrida | Abastecimento)[]>(endpoint, {
+      params: { inicio, fim },
+    });
+    setRegistrosHoje(data);
+  } catch (error) {
+    Toast.show({ type: 'error', text1: tratarErro(error), position: 'bottom' });
+  } finally {
+    setCarregandoHoje(false);
+  }
+}
+
+async function fetchHistorico(
+  pagNum: number,
+  t: TipoRegistro,
+  fd: Date | null,
+  setCarregando: (v: boolean) => void,
+  setCarregandoMais: (v: boolean) => void,
+  setRegistros: React.Dispatch<React.SetStateAction<(Corrida | Abastecimento)[]>>,
+  setPagina: (v: number) => void,
+  setTotalPaginas: (v: number) => void,
+): Promise<void> {
+  if (pagNum === 1) setCarregando(true);
+  else setCarregandoMais(true);
+  try {
+    const endpoint = t === 'corridas' ? '/corridas' : '/abastecimentos';
+    if (fd) {
+      const { inicio, fim } = rangeData(fd);
+      const { data } = await api.get<(Corrida | Abastecimento)[]>(endpoint, {
+        params: { inicio, fim },
+      });
+      setRegistros(data);
+      setPagina(1);
+      setTotalPaginas(1);
+    } else {
+      const { data } = await api.get<PaginadoResposta<Corrida | Abastecimento>>(endpoint, {
+        params: { page: pagNum, limit: LIMITE },
+      });
+      if (pagNum === 1) setRegistros(data.items);
+      else setRegistros((prev) => [...prev, ...data.items]);
+      setPagina(data.page);
+      setTotalPaginas(data.pages);
+    }
+  } catch (error) {
+    Toast.show({ type: 'error', text1: tratarErro(error), position: 'bottom' });
+  } finally {
+    setCarregando(false);
+    setCarregandoMais(false);
+  }
+}
+
+type EmptyHojeProps = Readonly<{ tipo: TipoRegistro }>;
+function EmptyHoje({ tipo }: EmptyHojeProps) {
+  const msg =
+    tipo === 'corridas'
+      ? 'Você não registrou nenhuma corrida hoje.'
+      : 'Você não abasteceu hoje.';
+  return (
+    <View style={styles.vazioContainer}>
+      <MaterialCommunityIcons
+        name={tipo === 'corridas' ? 'car-outline' : 'gas-station-outline'}
+        size={48}
+        color={Colors.textMuted}
+      />
+      <Text style={styles.vazioTexto}>{msg}</Text>
+    </View>
+  );
+}
+
+type EmptyHistoricoProps = Readonly<{ filtroData: Date | null }>;
+function EmptyHistorico({ filtroData }: EmptyHistoricoProps) {
+  return (
+    <View style={styles.vazioContainer}>
+      <MaterialCommunityIcons name="clipboard-text-off-outline" size={48} color={Colors.textMuted} />
+      <Text style={styles.vazioTexto}>
+        {filtroData
+          ? `Nenhum registro em ${formatarDataBtn(filtroData)}.`
+          : 'Nenhum registro encontrado.'}
+      </Text>
+    </View>
+  );
+}
+
+type ItemCardProps = Readonly<{ item: Corrida | Abastecimento; onPress: (item: Corrida | Abastecimento) => void }>;
+function ItemCard({ item, onPress }: ItemCardProps) {
+  const corrida = isCorrida(item);
+  const forma = corrida ? FORMAS_PAG.find((f) => f.valor === item.formaPagamento) : null;
+  const combust = corrida ? null : COMBUSTIVEIS.find((c) => c.valor === item.tipoCombustivel);
+  const icone: McIcon = corrida ? (forma?.icone ?? 'cash') : (combust?.icone ?? 'fire');
+  const label = corrida ? (forma?.label ?? '') : (combust?.label ?? '');
+
+  return (
+    <TouchableOpacity style={styles.itemCard} onPress={() => onPress(item)} activeOpacity={0.7}>
+      <View style={styles.itemEsquerda}>
+        <Text style={[styles.itemValor, { color: corrida ? Colors.gain : Colors.cost }]}>
+          {formatarMoeda(item.valor)}
+        </Text>
+        <View style={styles.itemMeta}>
+          <MaterialCommunityIcons name={icone} size={14} color={Colors.textSecondary} />
+          <Text style={styles.itemMetaTexto}>{label}</Text>
+        </View>
+      </View>
+      <View style={styles.itemDireita}>
+        <Text style={styles.itemHora}>{formatarDataHoraCurta(item.data)}</Text>
+        <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 export default function RegistrosScreen() {
   const [aba, setAba] = useState<Aba>('hoje');
   const [tipo, setTipo] = useState<TipoRegistro>('corridas');
@@ -149,19 +294,7 @@ export default function RegistrosScreen() {
   // ── Carregamento de dados ─────────────────────────────────────────────────
 
   async function carregarHoje(t: TipoRegistro = tipoRef.current) {
-    setCarregandoHoje(true);
-    try {
-      const { inicio, fim } = rangeHoje();
-      const endpoint = t === 'corridas' ? '/corridas' : '/abastecimentos';
-      const { data } = await api.get<(Corrida | Abastecimento)[]>(endpoint, {
-        params: { inicio, fim },
-      });
-      setRegistrosHoje(data);
-    } catch (error) {
-      Toast.show({ type: 'error', text1: tratarErro(error), position: 'bottom' });
-    } finally {
-      setCarregandoHoje(false);
-    }
+    await fetchHoje(t, setCarregandoHoje, setRegistrosHoje);
   }
 
   async function carregarHistorico(
@@ -169,38 +302,10 @@ export default function RegistrosScreen() {
     t: TipoRegistro = tipoRef.current,
     fd: Date | null = filtroDataRef.current,
   ) {
-    if (pagNum === 1) setCarregando(true);
-    else setCarregandoMais(true);
-
-    try {
-      const endpoint = t === 'corridas' ? '/corridas' : '/abastecimentos';
-
-      if (fd) {
-        const { inicio, fim } = rangeData(fd);
-        const { data } = await api.get<(Corrida | Abastecimento)[]>(endpoint, {
-          params: { inicio, fim },
-        });
-        setRegistros(data);
-        setPagina(1);
-        setTotalPaginas(1);
-      } else {
-        const { data } = await api.get<PaginadoResposta<Corrida | Abastecimento>>(endpoint, {
-          params: { page: pagNum, limit: LIMITE },
-        });
-        if (pagNum === 1) {
-          setRegistros(data.items);
-        } else {
-          setRegistros((prev) => [...prev, ...data.items]);
-        }
-        setPagina(data.page);
-        setTotalPaginas(data.pages);
-      }
-    } catch (error) {
-      Toast.show({ type: 'error', text1: tratarErro(error), position: 'bottom' });
-    } finally {
-      setCarregando(false);
-      setCarregandoMais(false);
-    }
+    await fetchHistorico(
+      pagNum, t, fd,
+      setCarregando, setCarregandoMais, setRegistros, setPagina, setTotalPaginas,
+    );
   }
 
   useFocusEffect(
@@ -368,21 +473,10 @@ export default function RegistrosScreen() {
       setShowEditDatePicker(false);
       return;
     }
-    if (Platform.OS === 'android') {
-      if (editPickerMode === 'date') {
-        const nova = new Date(selected);
-        nova.setHours(editData.getHours(), editData.getMinutes());
-        setEditData(nova);
-        setEditPickerMode('time');
-      } else {
-        const nova = new Date(editData);
-        nova.setHours(selected.getHours(), selected.getMinutes());
-        setEditData(nova);
-        setShowEditDatePicker(false);
-      }
-    } else {
-      setEditData(selected);
-    }
+    const { novaData, novoMode, fechar } = calcularEditData(selected, editPickerMode, editData);
+    setEditData(novaData);
+    if (novoMode) setEditPickerMode(novoMode);
+    if (fechar) setShowEditDatePicker(false);
   }
 
   // ── Render helpers ────────────────────────────────────────────────────────
@@ -391,63 +485,6 @@ export default function RegistrosScreen() {
     ? (Number(editValor) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
     : '';
 
-  function renderItem({ item }: { item: Corrida | Abastecimento }) {
-    const corrida = isCorrida(item);
-    const forma = corrida ? FORMAS_PAG.find((f) => f.valor === item.formaPagamento) : null;
-    const combust = !corrida ? COMBUSTIVEIS.find((c) => c.valor === item.tipoCombustivel) : null;
-    const icone: McIcon = corrida
-      ? (forma?.icone ?? 'cash')
-      : (combust?.icone ?? 'fire');
-    const label = corrida ? (forma?.label ?? '') : (combust?.label ?? '');
-
-    return (
-      <TouchableOpacity style={styles.itemCard} onPress={() => abrirItem(item)} activeOpacity={0.7}>
-        <View style={styles.itemEsquerda}>
-          <Text style={[styles.itemValor, { color: corrida ? Colors.gain : Colors.cost }]}>
-            {formatarMoeda(item.valor)}
-          </Text>
-          <View style={styles.itemMeta}>
-            <MaterialCommunityIcons name={icone} size={14} color={Colors.textSecondary} />
-            <Text style={styles.itemMetaTexto}>{label}</Text>
-          </View>
-        </View>
-        <View style={styles.itemDireita}>
-          <Text style={styles.itemHora}>{formatarDataHoraCurta(item.data)}</Text>
-          <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
-        </View>
-      </TouchableOpacity>
-    );
-  }
-
-  function EmptyHoje() {
-    const msg =
-      tipo === 'corridas'
-        ? 'Você não registrou nenhuma corrida hoje.'
-        : 'Você não abasteceu hoje.';
-    return (
-      <View style={styles.vazioContainer}>
-        <MaterialCommunityIcons
-          name={tipo === 'corridas' ? 'car-outline' : 'gas-station-outline'}
-          size={48}
-          color={Colors.textMuted}
-        />
-        <Text style={styles.vazioTexto}>{msg}</Text>
-      </View>
-    );
-  }
-
-  function EmptyHistorico() {
-    return (
-      <View style={styles.vazioContainer}>
-        <MaterialCommunityIcons name="clipboard-text-off-outline" size={48} color={Colors.textMuted} />
-        <Text style={styles.vazioTexto}>
-          {filtroData
-            ? `Nenhum registro em ${formatarDataBtn(filtroData)}.`
-            : 'Nenhum registro encontrado.'}
-        </Text>
-      </View>
-    );
-  }
 
   const listaAtiva = aba === 'hoje' ? registrosHoje : registros;
   const estaCarregando = aba === 'hoje' ? carregandoHoje : carregando;
@@ -539,8 +576,8 @@ export default function RegistrosScreen() {
           <FlatList
             data={listaAtiva}
             keyExtractor={(item) => item._id}
-            renderItem={renderItem}
-            ListEmptyComponent={aba === 'hoje' ? <EmptyHoje /> : <EmptyHistorico />}
+            renderItem={({ item }) => <ItemCard item={item} onPress={abrirItem} />}
+            ListEmptyComponent={aba === 'hoje' ? <EmptyHoje tipo={tipo} /> : <EmptyHistorico filtroData={filtroData} />}
             contentContainerStyle={styles.listaContent}
             showsVerticalScrollIndicator={false}
             ListFooterComponent={
@@ -584,11 +621,7 @@ export default function RegistrosScreen() {
                     <View style={{ width: 24 }} />
                   )}
                   <Text style={styles.modalTitulo}>
-                    {modoEdicao
-                      ? 'Editar registro'
-                      : itemSelecionado && isCorrida(itemSelecionado)
-                        ? 'Corrida'
-                        : 'Abastecimento'}
+                    {getTituloModal(modoEdicao, itemSelecionado)}
                   </Text>
                   <TouchableOpacity onPress={fecharModal} hitSlop={8}>
                     <Ionicons name="close" size={24} color={Colors.text} />
@@ -701,7 +734,7 @@ export default function RegistrosScreen() {
                           },
                         ]}
                         value={editValorFormatado}
-                        onChangeText={(t) => setEditValor(t.replace(/[^0-9]/g, ''))}
+                        onChangeText={(t) => setEditValor(t.replaceAll(/\D/g, ''))}
                         keyboardType="numeric"
                         placeholder="R$ 0,00"
                         placeholderTextColor={Colors.textMuted}

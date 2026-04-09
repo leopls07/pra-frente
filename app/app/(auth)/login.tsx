@@ -21,6 +21,43 @@ import { PasswordInput } from '../../components/ui/PasswordInput';
 
 type Modo = 'login' | 'cadastro';
 
+function validarCampos(
+  email: string,
+  senha: string,
+  modo: Modo,
+  nome: string,
+  confirmarSenha: string,
+): string | null {
+  if (!email.trim()) return 'Informe seu email.';
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return 'Email invalido.';
+  if (!senha) return 'Informe sua senha.';
+  if (modo === 'cadastro') {
+    if (!nome.trim()) return 'Informe seu nome.';
+    if (senha.length < 6) return 'Senha deve ter no minimo 6 caracteres.';
+    if (senha !== confirmarSenha) return 'As senhas não coincidem.';
+  }
+  return null;
+}
+
+function tratarErroLogin(
+  error: unknown,
+  setErro: (v: string) => void,
+  setEmailNaoConfirmado: (v: boolean) => void,
+  tratarErroFn: (e: unknown) => string,
+): void {
+  const axiosError = (error as any)?.response;
+  const status = axiosError?.status;
+  const codigo = axiosError?.data?.codigo;
+  if (status === 403 && codigo === 'EMAIL_NAO_CONFIRMADO') {
+    setEmailNaoConfirmado(true);
+    setErro('');
+  } else if (status === 401) {
+    setErro('Email ou senha incorretos.');
+  } else {
+    setErro(tratarErroFn(error));
+  }
+}
+
 export default function LoginScreen() {
   const { setUsuario } = useAuthStore();
   const router = useRouter();
@@ -53,20 +90,8 @@ export default function LoginScreen() {
     setReenvioSucesso(false);
   };
 
-  const validar = (): string | null => {
-    if (!email.trim()) return 'Informe seu email.';
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return 'Email invalido.';
-    if (!senha) return 'Informe sua senha.';
-    if (modo === 'cadastro') {
-      if (!nome.trim()) return 'Informe seu nome.';
-      if (senha.length < 6) return 'Senha deve ter no minimo 6 caracteres.';
-      if (senha !== confirmarSenha) return 'As senhas não coincidem.';
-    }
-    return null;
-  };
-
   const handleSubmit = async () => {
-    const erroValidacao = validar();
+    const erroValidacao = validarCampos(email, senha, modo, nome, confirmarSenha);
     if (erroValidacao) {
       setErro(erroValidacao);
       return;
@@ -94,18 +119,7 @@ export default function LoginScreen() {
         await setUsuario(data.user, data.jwt);
       }
     } catch (error: unknown) {
-      const axiosError = (error as any)?.response;
-      const status = axiosError?.status;
-      const codigo = axiosError?.data?.codigo;
-
-      if (status === 403 && codigo === 'EMAIL_NAO_CONFIRMADO') {
-        setEmailNaoConfirmado(true);
-        setErro('');
-      } else if (status === 401) {
-        setErro('Email ou senha incorretos.');
-      } else {
-        setErro(tratarErro(error));
-      }
+      tratarErroLogin(error, setErro, setEmailNaoConfirmado, tratarErro);
     } finally {
       setLoading(false);
     }
