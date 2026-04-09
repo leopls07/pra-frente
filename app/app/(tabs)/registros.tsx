@@ -33,6 +33,8 @@ import {
 
 type Aba = 'hoje' | 'historico';
 type TipoRegistro = 'corridas' | 'abastecimentos';
+type Registro = Registro;
+type RegistroOuNull = Registro | null;
 type McIcon = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
 const FORMAS_PAG: { valor: FormaPagamento; label: string; icone: McIcon }[] = [
@@ -51,7 +53,7 @@ const LIMITE = 20;
 interface HistoricoSetters {
   setCarregando: (v: boolean) => void;
   setCarregandoMais: (v: boolean) => void;
-  setRegistros: React.Dispatch<React.SetStateAction<(Corrida | Abastecimento)[]>>;
+  setRegistros: React.Dispatch<React.SetStateAction<(Registro)[]>>;
   setPagina: (v: number) => void;
   setTotalPaginas: (v: number) => void;
 }
@@ -112,7 +114,7 @@ function rangeData(date: Date) {
   return { inicio: toISOComOffsetBRT(inicio), fim: toISOComOffsetBRT(fim) };
 }
 
-function isCorrida(item: Corrida | Abastecimento): item is Corrida {
+function isCorrida(item: Registro): item is Corrida {
   return 'formaPagamento' in item;
 }
 
@@ -120,7 +122,7 @@ function isCorrida(item: Corrida | Abastecimento): item is Corrida {
 
 function getTituloModal(
   modoEdicao: boolean,
-  item: Corrida | Abastecimento | null,
+  item: RegistroOuNull,
 ): string {
   if (modoEdicao) return 'Editar registro';
   if (item && isCorrida(item)) return 'Corrida';
@@ -146,13 +148,13 @@ function calcularEditData(
 async function fetchHoje(
   t: TipoRegistro,
   setCarregandoHoje: (v: boolean) => void,
-  setRegistrosHoje: (v: (Corrida | Abastecimento)[]) => void,
+  setRegistrosHoje: (v: (Registro)[]) => void,
 ): Promise<void> {
   setCarregandoHoje(true);
   try {
     const { inicio, fim } = rangeHoje();
     const endpoint = t === 'corridas' ? '/corridas' : '/abastecimentos';
-    const { data } = await api.get<(Corrida | Abastecimento)[]>(endpoint, {
+    const { data } = await api.get<(Registro)[]>(endpoint, {
       params: { inicio, fim },
     });
     setRegistrosHoje(data);
@@ -176,14 +178,14 @@ async function fetchHistorico(
     const endpoint = t === 'corridas' ? '/corridas' : '/abastecimentos';
     if (fd) {
       const { inicio, fim } = rangeData(fd);
-      const { data } = await api.get<(Corrida | Abastecimento)[]>(endpoint, {
+      const { data } = await api.get<(Registro)[]>(endpoint, {
         params: { inicio, fim },
       });
       setRegistros(data);
       setPagina(1);
       setTotalPaginas(1);
     } else {
-      const { data } = await api.get<PaginadoResposta<Corrida | Abastecimento>>(endpoint, {
+      const { data } = await api.get<PaginadoResposta<Registro>>(endpoint, {
         params: { page: pagNum, limit: LIMITE },
       });
       if (pagNum === 1) setRegistros(data.items);
@@ -231,7 +233,7 @@ function EmptyHistorico({ filtroData }: EmptyHistoricoProps) {
   );
 }
 
-type ItemCardProps = Readonly<{ item: Corrida | Abastecimento; onPress: (item: Corrida | Abastecimento) => void }>;
+type ItemCardProps = Readonly<{ item: Registro; onPress: (item: Registro) => void }>;
 function ItemCard({ item, onPress }: ItemCardProps) {
   const corrida = isCorrida(item);
   const forma = corrida ? FORMAS_PAG.find((f) => f.valor === item.formaPagamento) : null;
@@ -262,12 +264,12 @@ const PICKER_DISPLAY: 'inline' | 'default' = Platform.OS === 'ios' ? 'inline' : 
 const KAV_BEHAVIOR: 'padding' | 'height' = Platform.OS === 'ios' ? 'padding' : 'height';
 
 function atualizarNaLista(
-  atualizado: Corrida | Abastecimento,
+  atualizado: Registro,
   aba: Aba,
-  setRegistrosHoje: React.Dispatch<React.SetStateAction<(Corrida | Abastecimento)[]>>,
-  setRegistros: React.Dispatch<React.SetStateAction<(Corrida | Abastecimento)[]>>,
+  setRegistrosHoje: React.Dispatch<React.SetStateAction<(Registro)[]>>,
+  setRegistros: React.Dispatch<React.SetStateAction<(Registro)[]>>,
 ): void {
-  const substituir = (prev: (Corrida | Abastecimento)[]) =>
+  const substituir = (prev: (Registro)[]) =>
     prev.map((item) => (item._id === atualizado._id ? atualizado : item));
   if (aba === 'hoje') setRegistrosHoje(substituir);
   else setRegistros(substituir);
@@ -276,20 +278,100 @@ function atualizarNaLista(
 function removerDaLista(
   id: string,
   aba: Aba,
-  setRegistrosHoje: React.Dispatch<React.SetStateAction<(Corrida | Abastecimento)[]>>,
-  setRegistros: React.Dispatch<React.SetStateAction<(Corrida | Abastecimento)[]>>,
+  setRegistrosHoje: React.Dispatch<React.SetStateAction<(Registro)[]>>,
+  setRegistros: React.Dispatch<React.SetStateAction<(Registro)[]>>,
 ): void {
-  const filtrar = (prev: (Corrida | Abastecimento)[]) => prev.filter((item) => item._id !== id);
+  const filtrar = (prev: (Registro)[]) => prev.filter((item) => item._id !== id);
   if (aba === 'hoje') setRegistrosHoje(filtrar);
   else setRegistros(filtrar);
 }
 
+interface IniciarEdicaoSetters {
+  setEditData: (v: Date) => void;
+  setEditValor: (v: string) => void;
+  setEditFormaPagamento: (v: FormaPagamento) => void;
+  setEditObservacao: (v: string) => void;
+  setEditTipoCombustivel: (v: TipoCombustivel) => void;
+  setModoEdicao: (v: boolean) => void;
+}
+
+function iniciarEdicao(
+  itemSelecionado: Registro,
+  setters: IniciarEdicaoSetters,
+): void {
+  setters.setEditData(new Date(itemSelecionado.data));
+  setters.setEditValor(String(Math.round(itemSelecionado.valor * 100)));
+  if (isCorrida(itemSelecionado)) {
+    setters.setEditFormaPagamento(itemSelecionado.formaPagamento);
+    setters.setEditObservacao(itemSelecionado.observacao ?? '');
+  } else {
+    setters.setEditTipoCombustivel(itemSelecionado.tipoCombustivel);
+  }
+  setters.setModoEdicao(true);
+}
+
+interface SalvarEdicaoParams {
+  itemSelecionado: Registro;
+  editValor: string;
+  editFormaPagamento: FormaPagamento;
+  editTipoCombustivel: TipoCombustivel;
+  editData: Date;
+  editObservacao: string;
+  aba: Aba;
+  setSalvandoEdicao: (v: boolean) => void;
+  setRegistrosHoje: React.Dispatch<React.SetStateAction<(Registro)[]>>;
+  setRegistros: React.Dispatch<React.SetStateAction<(Registro)[]>>;
+  fecharModal: () => void;
+}
+
+async function salvarEdicao(params: SalvarEdicaoParams): Promise<void> {
+  const {
+    itemSelecionado, editValor, editFormaPagamento, editTipoCombustivel,
+    editData, editObservacao, aba, setSalvandoEdicao, setRegistrosHoje,
+    setRegistros, fecharModal,
+  } = params;
+
+  if (!editValor || Number(editValor) === 0) {
+    Toast.show({ type: 'error', text1: 'Informe o valor.', position: 'bottom' });
+    return;
+  }
+
+  const endpoint = isCorrida(itemSelecionado)
+    ? `/corridas/${itemSelecionado._id}`
+    : `/abastecimentos/${itemSelecionado._id}`;
+
+  const body: Record<string, unknown> = {
+    valor: Number(editValor) / 100,
+    data: toISOComOffsetBRT(editData),
+  };
+
+  if (isCorrida(itemSelecionado)) {
+    body.formaPagamento = editFormaPagamento;
+    body.observacao = editObservacao.trim() || undefined;
+  } else {
+    body.tipoCombustivel = editTipoCombustivel;
+  }
+
+  setSalvandoEdicao(true);
+  try {
+    const { data: atualizado } = await api.put<Registro>(endpoint, body);
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Toast.show({ type: 'success', text1: 'Registro atualizado!', position: 'bottom' });
+    atualizarNaLista(atualizado, aba, setRegistrosHoje, setRegistros);
+    fecharModal();
+  } catch (error) {
+    Toast.show({ type: 'error', text1: tratarErro(error), position: 'bottom' });
+  } finally {
+    setSalvandoEdicao(false);
+  }
+}
+
 async function executarExclusao(
-  itemSelecionado: Corrida | Abastecimento | null,
+  itemSelecionado: RegistroOuNull,
   aba: Aba,
   setExcluindo: (v: boolean) => void,
-  setRegistrosHoje: React.Dispatch<React.SetStateAction<(Corrida | Abastecimento)[]>>,
-  setRegistros: React.Dispatch<React.SetStateAction<(Corrida | Abastecimento)[]>>,
+  setRegistrosHoje: React.Dispatch<React.SetStateAction<(Registro)[]>>,
+  setRegistros: React.Dispatch<React.SetStateAction<(Registro)[]>>,
   fecharModal: () => void,
 ): Promise<void> {
   if (!itemSelecionado) return;
@@ -315,11 +397,11 @@ export default function RegistrosScreen() {
   const [tipo, setTipo] = useState<TipoRegistro>('corridas');
 
   // Hoje
-  const [registrosHoje, setRegistrosHoje] = useState<(Corrida | Abastecimento)[]>([]);
+  const [registrosHoje, setRegistrosHoje] = useState<(Registro)[]>([]);
   const [carregandoHoje, setCarregandoHoje] = useState(false);
 
   // Histórico
-  const [registros, setRegistros] = useState<(Corrida | Abastecimento)[]>([]);
+  const [registros, setRegistros] = useState<(Registro)[]>([]);
   const [carregando, setCarregando] = useState(false);
   const [pagina, setPagina] = useState(1);
   const [totalPaginas, setTotalPaginas] = useState(1);
@@ -333,7 +415,7 @@ export default function RegistrosScreen() {
   const filtroDataRef = useRef<Date | null>(null);
 
   // Modal de detalhe / edição
-  const [itemSelecionado, setItemSelecionado] = useState<Corrida | Abastecimento | null>(null);
+  const [itemSelecionado, setItemSelecionado] = useState<RegistroOuNull>(null);
   const [modalVisivel, setModalVisivel] = useState(false);
   const [modoEdicao, setModoEdicao] = useState(false);
 
@@ -412,7 +494,7 @@ export default function RegistrosScreen() {
 
   // ── Modal ─────────────────────────────────────────────────────────────────
 
-  function abrirItem(item: Corrida | Abastecimento) {
+  function abrirItem(item: Registro) {
     setItemSelecionado(item);
     setModoEdicao(false);
     setShowEditDatePicker(false);
@@ -426,56 +508,6 @@ export default function RegistrosScreen() {
     setShowEditDatePicker(false);
   }
 
-  function iniciarEdicao() {
-    if (!itemSelecionado) return;
-    setEditData(new Date(itemSelecionado.data));
-    setEditValor(String(Math.round(itemSelecionado.valor * 100)));
-    if (isCorrida(itemSelecionado)) {
-      setEditFormaPagamento(itemSelecionado.formaPagamento);
-      setEditObservacao(itemSelecionado.observacao ?? '');
-    } else {
-      setEditTipoCombustivel(itemSelecionado.tipoCombustivel);
-    }
-    setModoEdicao(true);
-  }
-
-  async function salvarEdicao() {
-    if (!itemSelecionado) return;
-    if (!editValor || Number(editValor) === 0) {
-      Toast.show({ type: 'error', text1: 'Informe o valor.', position: 'bottom' });
-      return;
-    }
-
-    const endpoint = isCorrida(itemSelecionado)
-      ? `/corridas/${itemSelecionado._id}`
-      : `/abastecimentos/${itemSelecionado._id}`;
-
-    const body: Record<string, unknown> = {
-      valor: Number(editValor) / 100,
-      data: toISOComOffsetBRT(editData),
-    };
-
-    if (isCorrida(itemSelecionado)) {
-      body.formaPagamento = editFormaPagamento;
-      if (editObservacao.trim()) body.observacao = editObservacao.trim();
-      else body.observacao = undefined;
-    } else {
-      body.tipoCombustivel = editTipoCombustivel;
-    }
-
-    setSalvandoEdicao(true);
-    try {
-      const { data: atualizado } = await api.put<Corrida | Abastecimento>(endpoint, body);
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Toast.show({ type: 'success', text1: 'Registro atualizado!', position: 'bottom' });
-      atualizarNaLista(atualizado, abaRef.current, setRegistrosHoje, setRegistros);
-      fecharModal();
-    } catch (error) {
-      Toast.show({ type: 'error', text1: tratarErro(error), position: 'bottom' });
-    } finally {
-      setSalvandoEdicao(false);
-    }
-  }
 
   function confirmarExclusao() {
     Alert.alert('Excluir registro', 'Tem certeza que deseja excluir este registro?', [
@@ -728,7 +760,7 @@ export default function RegistrosScreen() {
                     <View style={styles.modalAcoes}>
                       <TouchableOpacity
                         style={styles.btnEditar}
-                        onPress={iniciarEdicao}
+                        onPress={() => itemSelecionado && iniciarEdicao(itemSelecionado, { setEditData, setEditValor, setEditFormaPagamento, setEditObservacao, setEditTipoCombustivel, setModoEdicao })}
                         activeOpacity={0.8}
                       >
                         <Ionicons name="create-outline" size={20} color={Colors.text} />
@@ -890,7 +922,7 @@ export default function RegistrosScreen() {
 
                     <TouchableOpacity
                       style={[styles.btnSalvar, salvandoEdicao && styles.btnDesabilitado]}
-                      onPress={salvarEdicao}
+                      onPress={() => itemSelecionado && salvarEdicao({ itemSelecionado, editValor, editFormaPagamento, editTipoCombustivel, editData, editObservacao, aba: abaRef.current, setSalvandoEdicao, setRegistrosHoje, setRegistros, fecharModal })}
                       disabled={salvandoEdicao}
                       activeOpacity={0.8}
                       accessibilityRole="button"
