@@ -2,9 +2,9 @@ import { Router, Request, Response } from 'express';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import crypto from 'crypto';
-import fs from 'fs';
-import path from 'path';
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 import { z } from 'zod';
 import { Resend } from 'resend';
 import { UserPraFrente } from '../models/UserPraFrente';
@@ -13,14 +13,32 @@ const router = Router();
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const registerSchema = z.object({
-  email: z.string().email('Email inválido.').max(100, 'Email muito longo.'),
+  email: z.email('Email inválido.').max(100, 'Email muito longo.'),
   password: z.string().min(6, 'Senha deve ter no mínimo 6 caracteres.').max(32, 'Senha deve ter no máximo 32 caracteres.'),
   name: z.string().min(1, 'Nome é obrigatório.').max(32, 'Nome deve ter no máximo 32 caracteres.'),
 });
 
 const loginSchema = z.object({
-  email: z.string().email('Email inválido.').max(100, 'Email muito longo.'),
+  email: z.email('Email inválido.').max(100, 'Email muito longo.'),
   password: z.string().min(1, 'Senha é obrigatória.').max(32, 'Senha deve ter no máximo 32 caracteres.'),
+});
+
+const emailSchema = z.object({
+  email: z.email('Email inválido.').max(100, 'Email muito longo.'),
+});
+
+const tokenQuerySchema = z.object({
+  token: z.string().min(1, 'Token inválido.').max(128, 'Token inválido.'),
+});
+
+const redefinirSenhaSchema = z.object({
+  token: z.string().min(1, 'Token inválido.').max(128, 'Token inválido.'),
+  novaSenha: z.string().min(6, 'A senha deve ter no mínimo 6 caracteres.').max(32, 'Senha deve ter no máximo 32 caracteres.'),
+});
+
+const alterarSenhaSchema = z.object({
+  senhaAtual: z.string().min(1, 'Informe a senha atual.').max(32, 'Senha deve ter no máximo 32 caracteres.'),
+  novaSenha: z.string().min(6, 'A nova senha deve ter no mínimo 6 caracteres.').max(32, 'Senha deve ter no máximo 32 caracteres.'),
 });
 
 async function enviarEmailConfirmacao(email: string, name: string, token: string): Promise<void> {
@@ -65,7 +83,7 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
   const { email, password, name } = parsed.data;
 
   try {
-    const existing = await UserPraFrente.findOne({ email: email.toLowerCase() });
+    const existing = await UserPraFrente.findOne({ email: { $eq: email.toLowerCase() } });
     if (existing) {
       res.status(409).json({ message: 'Email já cadastrado.' });
       return;
@@ -93,15 +111,16 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
 });
 
 router.get('/confirmar-email', async (req: Request, res: Response): Promise<void> => {
-  const { token } = req.query;
-
-  if (!token || typeof token !== 'string') {
+  const parsed = tokenQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
     res.status(400).send(paginaHTML('erro', 'Link inválido. Solicite um novo email de confirmação no app.'));
     return;
   }
 
+  const { token } = parsed.data;
+
   try {
-    const user = await UserPraFrente.findOne({ tokenConfirmacao: token });
+    const user = await UserPraFrente.findOne({ tokenConfirmacao: { $eq: token } });
 
     if (!user) {
       res.status(404).send(paginaHTML('erro', 'Link inválido ou expirado. Solicite um novo email de confirmação no app.'));
@@ -128,7 +147,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
   const { email, password } = parsed.data;
 
   try {
-    const user = await UserPraFrente.findOne({ email: email.toLowerCase() });
+    const user = await UserPraFrente.findOne({ email: { $eq: email.toLowerCase() } });
     if (!user) {
       res.status(401).json({ message: 'Email ou senha incorretos.' });
       return;
@@ -161,15 +180,16 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
 });
 
 router.post('/reenviar-confirmacao', async (req: Request, res: Response): Promise<void> => {
-  const { email } = req.body;
-
-  if (!email || typeof email !== 'string') {
-    res.status(400).json({ message: 'Email é obrigatório.' });
+  const parsed = emailSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: parsed.error.issues[0].message });
     return;
   }
 
+  const { email } = parsed.data;
+
   try {
-    const user = await UserPraFrente.findOne({ email: email.toLowerCase() });
+    const user = await UserPraFrente.findOne({ email: { $eq: email.toLowerCase() } });
 
     if (!user || user.confirmado) {
       // Resposta genérica para não expor se o email existe
@@ -190,15 +210,16 @@ router.post('/reenviar-confirmacao', async (req: Request, res: Response): Promis
 });
 
 router.post('/esqueceu-senha', async (req: Request, res: Response): Promise<void> => {
-  const { email } = req.body;
-
-  if (!email || typeof email !== 'string') {
-    res.status(400).json({ message: 'Email é obrigatório.' });
+  const parsed = emailSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: parsed.error.issues[0].message });
     return;
   }
 
+  const { email } = parsed.data;
+
   try {
-    const user = await UserPraFrente.findOne({ email: email.toLowerCase().trim() });
+    const user = await UserPraFrente.findOne({ email: { $eq: email.toLowerCase().trim() } });
 
     if (user) {
       const tokenRedefinicaoSenha = crypto.randomUUID();
@@ -245,15 +266,16 @@ router.post('/esqueceu-senha', async (req: Request, res: Response): Promise<void
 });
 
 router.get('/redefinir-senha', async (req: Request, res: Response): Promise<void> => {
-  const { token } = req.query;
-
-  if (!token || typeof token !== 'string') {
+  const parsed = tokenQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
     res.status(400).send(paginaHTML('erro', 'Link inválido. Solicite uma nova redefinição de senha no app.'));
     return;
   }
 
+  const { token } = parsed.data;
+
   try {
-    const user = await UserPraFrente.findOne({ tokenRedefinicaoSenha: token });
+    const user = await UserPraFrente.findOne({ tokenRedefinicaoSenha: { $eq: token } });
 
     if (!user) {
       res.status(404).send(paginaHTML('erro', 'Link inválido ou expirado. Solicite uma nova redefinição de senha no app.'));
@@ -267,27 +289,16 @@ router.get('/redefinir-senha', async (req: Request, res: Response): Promise<void
 });
 
 router.post('/alterar-senha', authMiddleware, async (req: AuthRequest, res: Response): Promise<void> => {
-  const { senhaAtual, novaSenha } = req.body;
+  const parsed = alterarSenhaSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: parsed.error.issues[0].message });
+    return;
+  }
 
-  if (!senhaAtual || typeof senhaAtual !== 'string') {
-    res.status(400).json({ message: 'Informe a senha atual.' });
-    return;
-  }
-  if (senhaAtual.length > 32) {
-    res.status(400).json({ message: 'Senha deve ter no máximo 32 caracteres.' });
-    return;
-  }
-  if (!novaSenha || typeof novaSenha !== 'string' || novaSenha.length < 6) {
-    res.status(400).json({ message: 'A nova senha deve ter no mínimo 6 caracteres.' });
-    return;
-  }
-  if (novaSenha.length > 32) {
-    res.status(400).json({ message: 'Senha deve ter no máximo 32 caracteres.' });
-    return;
-  }
+  const { senhaAtual, novaSenha } = parsed.data;
 
   try {
-    const user = await UserPraFrente.findOne({ email: req.user!.email });
+    const user = await UserPraFrente.findById(req.user!.id);
     if (!user) {
       res.status(404).json({ message: 'Usuário não encontrado.' });
       return;
@@ -309,23 +320,16 @@ router.post('/alterar-senha', authMiddleware, async (req: AuthRequest, res: Resp
 });
 
 router.post('/redefinir-senha', async (req: Request, res: Response): Promise<void> => {
-  const { token, novaSenha } = req.body;
+  const parsed = redefinirSenhaSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ message: parsed.error.issues[0].message });
+    return;
+  }
 
-  if (!token || typeof token !== 'string') {
-    res.status(400).json({ message: 'Token inválido.' });
-    return;
-  }
-  if (!novaSenha || typeof novaSenha !== 'string' || novaSenha.length < 6) {
-    res.status(400).json({ message: 'A senha deve ter no mínimo 6 caracteres.' });
-    return;
-  }
-  if (novaSenha.length > 32) {
-    res.status(400).json({ message: 'Senha deve ter no máximo 32 caracteres.' });
-    return;
-  }
+  const { token, novaSenha } = parsed.data;
 
   try {
-    const user = await UserPraFrente.findOne({ tokenRedefinicaoSenha: token });
+    const user = await UserPraFrente.findOne({ tokenRedefinicaoSenha: { $eq: token } });
 
     if (!user) {
       res.status(404).json({ message: 'Link inválido ou expirado. Solicite uma nova redefinição de senha no app.' });

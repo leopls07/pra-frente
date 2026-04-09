@@ -32,7 +32,7 @@ router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const parse = metaSchema.safeParse(req.body);
     if (!parse.success) {
-      res.status(400).json({ message: 'Dados inválidos.', details: parse.error.errors });
+      res.status(400).json({ message: 'Dados inválidos.', details: parse.error.issues });
       return;
     }
 
@@ -57,7 +57,7 @@ router.put('/', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const parse = metaSchema.safeParse(req.body);
     if (!parse.success) {
-      res.status(400).json({ message: 'Dados inválidos.', details: parse.error.errors });
+      res.status(400).json({ message: 'Dados inválidos.', details: parse.error.issues });
       return;
     }
 

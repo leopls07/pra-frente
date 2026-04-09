@@ -9,25 +9,42 @@ router.use(authMiddleware);
 const corridaSchema = z.object({
   valor: z.number().positive().max(99999.99, 'Valor máximo é R$ 99.999,99.'),
   formaPagamento: z.enum(['pix', 'dinheiro', 'cartao']),
-  data: z.string().datetime({ offset: true }),
+  data: z.iso.datetime(),
   observacao: z.string().max(200, 'Observação deve ter no máximo 200 caracteres.').optional(),
 });
 
+const querySchema = z.object({
+  inicio: z.iso.datetime().optional(),
+  fim: z.iso.datetime().optional(),
+  page: z.string().regex(/^\d+$/).optional(),
+  limit: z.string().regex(/^\d+$/).optional(),
+});
+
+const idParamSchema = z.object({
+  id: z.string().regex(/^[0-9a-fA-F]{24}$/, 'ID inválido.'),
+});
+
 router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
+  const parsedQuery = querySchema.safeParse(req.query);
+  if (!parsedQuery.success) {
+    res.status(400).json({ message: 'Parâmetros inválidos.', details: parsedQuery.error.issues });
+    return;
+  }
+
   try {
-    const { inicio, fim, page, limit } = req.query;
+    const { inicio, fim, page, limit } = parsedQuery.data;
     const filtro: Record<string, unknown> = { userId: req.user!.id };
 
     if (inicio || fim) {
       filtro.data = {};
-      if (inicio) (filtro.data as Record<string, Date>).$gte = new Date(inicio as string);
-      if (fim) (filtro.data as Record<string, Date>).$lte = new Date(fim as string);
+      if (inicio) (filtro.data as Record<string, Date>).$gte = new Date(inicio);
+      if (fim) (filtro.data as Record<string, Date>).$lte = new Date(fim);
     }
 
-    const limitNum = parseInt(limit as string) || 0;
+    const limitNum = limit ? Number.parseInt(limit) : 0;
 
     if (limitNum > 0) {
-      const pageNum = Math.max(1, parseInt(page as string) || 1);
+      const pageNum = Math.max(1, page ? Number.parseInt(page) : 1);
       const total = await Corrida.countDocuments(filtro);
       const corridas = await Corrida.find(filtro)
         .sort({ data: -1 })
@@ -46,7 +63,7 @@ router.get('/', async (req: AuthRequest, res: Response): Promise<void> => {
 router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
   const parsed = corridaSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ message: 'Dados inválidos.', details: parsed.error.flatten() });
+    res.status(400).json({ message: 'Dados inválidos.', details: parsed.error.issues });
     return;
   }
 
@@ -63,15 +80,21 @@ router.post('/', async (req: AuthRequest, res: Response): Promise<void> => {
 });
 
 router.put('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
+  const parsedId = idParamSchema.safeParse(req.params);
+  if (!parsedId.success) {
+    res.status(400).json({ message: 'ID inválido.' });
+    return;
+  }
+
   const parsed = corridaSchema.partial().safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ message: 'Dados inválidos.', details: parsed.error.flatten() });
+    res.status(400).json({ message: 'Dados inválidos.', details: parsed.error.issues });
     return;
   }
 
   try {
     const corrida = await Corrida.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user!.id },
+      { _id: { $eq: parsedId.data.id }, userId: { $eq: req.user!.id } },
       parsed.data,
       { new: true }
     );
@@ -86,8 +109,14 @@ router.put('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
 });
 
 router.delete('/:id', async (req: AuthRequest, res: Response): Promise<void> => {
+  const parsedId = idParamSchema.safeParse(req.params);
+  if (!parsedId.success) {
+    res.status(400).json({ message: 'ID inválido.' });
+    return;
+  }
+
   try {
-    const corrida = await Corrida.findOneAndDelete({ _id: req.params.id, userId: req.user!.id });
+    const corrida = await Corrida.findOneAndDelete({ _id: { $eq: parsedId.data.id }, userId: { $eq: req.user!.id } });
     if (!corrida) {
       res.status(404).json({ message: 'Corrida não encontrada.' });
       return;

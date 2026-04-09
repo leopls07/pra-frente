@@ -1,4 +1,5 @@
 import { Router, Response } from 'express';
+import { z } from 'zod';
 import { Corrida } from '../models/Corrida';
 import { Abastecimento } from '../models/Abastecimento';
 import { Meta } from '../models/Meta';
@@ -7,6 +8,12 @@ import { rangeParaPeriodoBRT, dataISOBRT } from '../utils/dataBRT';
 
 const router = Router();
 router.use(authMiddleware);
+
+const detalhadoQuerySchema = z.object({
+  inicio: z.iso.datetime().optional(),
+  fim: z.iso.datetime().optional(),
+  periodo: z.enum(['hoje', 'semana', 'mes']).optional(),
+});
 
 router.get('/resumo', async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -41,16 +48,23 @@ router.get('/resumo', async (req: AuthRequest, res: Response): Promise<void> => 
 });
 
 router.get('/detalhado', async (req: AuthRequest, res: Response): Promise<void> => {
+  const parsedQuery = detalhadoQuerySchema.safeParse(req.query);
+  if (!parsedQuery.success) {
+    res.status(400).json({ message: 'Parâmetros inválidos.', details: parsedQuery.error.issues });
+    return;
+  }
+
   try {
     let inicio: Date;
     let fim: Date;
 
-    if (req.query.inicio && req.query.fim) {
-      inicio = new Date(req.query.inicio as string);
-      fim = new Date(req.query.fim as string);
+    const { inicio: inicioStr, fim: fimStr, periodo } = parsedQuery.data;
+
+    if (inicioStr && fimStr) {
+      inicio = new Date(inicioStr);
+      fim = new Date(fimStr);
     } else {
-      const periodo = (req.query.periodo as string) || 'mes';
-      ({ inicio, fim } = rangeParaPeriodoBRT(periodo));
+      ({ inicio, fim } = rangeParaPeriodoBRT(periodo ?? 'mes'));
     }
 
     const [corridas, abastecimentos, meta] = await Promise.all([

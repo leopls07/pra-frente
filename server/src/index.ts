@@ -2,7 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
-import path from 'path';
+import path from 'node:path';
 
 import authRoutes from './routes/auth';
 import corridasRoutes from './routes/corridas';
