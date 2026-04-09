@@ -55,7 +55,7 @@ export default function AbastecimentoScreen() {
   );
 
   const handleValorChange = (text: string) => {
-    setValor(text.replace(/[^0-9]/g, ''));
+    setValor(text.replaceAll(/\D/g, ''));
   };
 
   const valorFormatado = valor

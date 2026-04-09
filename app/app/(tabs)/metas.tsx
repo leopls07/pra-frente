@@ -34,8 +34,8 @@ function formatarMoeda(centavos: number): string {
 }
 
 function parseCentavos(raw: string): number {
-  const digits = raw.replace(/\D/g, '');
-  return parseInt(digits || '0', 10);
+  const digits = raw.replaceAll(/\D/g, '');
+  return Number.parseInt(digits || '0', 10);
 }
 
 function formatarInput(centavos: number): string {

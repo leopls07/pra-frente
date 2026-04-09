@@ -209,15 +209,13 @@ export default function RelatoriosScreen() {
               accessibilityState={{ selected: selecionado }}
             >
               <Text style={styles.cardLabel}>{p.label}</Text>
-              {loadingResumo ? (
-                <ActivityIndicator color={Colors.primary} />
-              ) : semDados ? (
-                <Text style={styles.cardSemDados}>Nenhuma corrida no período</Text>
-              ) : (
+              {loadingResumo && <ActivityIndicator color={Colors.primary} />}
+              {semDados && <Text style={styles.cardSemDados}>Nenhuma corrida no período</Text>}
+              {!loadingResumo && !semDados && (
                 <>
                   <Text style={styles.cardLucro}>{fmt(dados?.ganho_bruto ?? 0)}</Text>
                   <Text style={styles.cardSubtexto}>
-                    {dados?.total_corridas} corrida{dados?.total_corridas !== 1 ? 's' : ''}
+                    {dados?.total_corridas} corrida{dados?.total_corridas === 1 ? '' : 's'}
                     {'  ·  '}líquido {fmt(dados?.lucro_liquido ?? 0)}
                   </Text>
                 </>
@@ -278,11 +276,7 @@ export default function RelatoriosScreen() {
       )}
 
       <View style={styles.anualContainer}>
-        {!anualAberto ? (
-          <TouchableOpacity onPress={abrirAnual} activeOpacity={0.6}>
-            <Text style={styles.anualLink}>Gerar relatório anual</Text>
-          </TouchableOpacity>
-        ) : (
+        {anualAberto ? (
           <View style={styles.anualCard}>
             <View style={styles.anualHeader}>
               <TouchableOpacity
@@ -339,6 +333,10 @@ export default function RelatoriosScreen() {
               </>
             )}
           </View>
+        ) : (
+          <TouchableOpacity onPress={abrirAnual} activeOpacity={0.6}>
+            <Text style={styles.anualLink}>Gerar relatório anual</Text>
+          </TouchableOpacity>
         )}
         </View>
         </View>
@@ -352,12 +350,12 @@ function Linha({
   valor,
   cor,
   destaque,
-}: {
+}: Readonly<{
   label: string;
   valor: string;
   cor?: string;
   destaque?: boolean;
-}) {
+}>) {
   return (
     <View style={[linhaStyles.row, destaque && linhaStyles.rowDestaque]}>
       <Text style={linhaStyles.label}>{label}</Text>

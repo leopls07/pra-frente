@@ -3,11 +3,9 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, TextInputProps } f
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/colors';
 
-interface PasswordInputProps extends Omit<TextInputProps, 'secureTextEntry'> {
-  label: string;
-}
+type PasswordInputProps = Omit<TextInputProps, 'secureTextEntry'> & { label: string };
 
-export function PasswordInput({ label, style, ...props }: PasswordInputProps) {
+export function PasswordInput({ label, style, ...props }: Readonly<PasswordInputProps>) {
   const [visivel, setVisivel] = useState(false);
 
   return (

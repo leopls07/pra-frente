@@ -8,6 +8,29 @@ function icon(focused: boolean, active: IoniconsName, inactive: IoniconsName) {
   return <Ionicons name={focused ? active : inactive} size={24} color={focused ? Colors.primary : Colors.textMuted} />;
 }
 
+function iconCombustivel({ focused }: Readonly<{ focused: boolean }>) {
+  return (
+    <MaterialCommunityIcons
+      name="gas-station-outline"
+      size={24}
+      color={focused ? Colors.primary : Colors.textMuted}
+    />
+  );
+}
+
+function iconInicio({ focused }: Readonly<{ focused: boolean }>) {
+  return icon(focused, 'home', 'home-outline');
+}
+function iconCorrida({ focused }: Readonly<{ focused: boolean }>) {
+  return icon(focused, 'car', 'car-outline');
+}
+function iconRelatorios({ focused }: Readonly<{ focused: boolean }>) {
+  return icon(focused, 'stats-chart', 'stats-chart-outline');
+}
+function iconRegistros({ focused }: Readonly<{ focused: boolean }>) {
+  return icon(focused, 'list', 'list-outline');
+}
+
 export default function TabsLayout() {
   return (
     <Tabs
@@ -28,7 +51,7 @@ export default function TabsLayout() {
         options={{
           title: 'Início',
           tabBarLabel: 'Início',
-          tabBarIcon: ({ focused }) => icon(focused, 'home', 'home-outline'),
+          tabBarIcon: iconInicio,
         }}
       />
       <Tabs.Screen
@@ -36,7 +59,7 @@ export default function TabsLayout() {
         options={{
           title: 'Corrida',
           tabBarLabel: 'Corrida',
-          tabBarIcon: ({ focused }) => icon(focused, 'car', 'car-outline'),
+          tabBarIcon: iconCorrida,
         }}
       />
       <Tabs.Screen
@@ -44,13 +67,7 @@ export default function TabsLayout() {
         options={{
           title: 'Combustível',
           tabBarLabel: 'Combustível',
-          tabBarIcon: ({ focused }) => (
-            <MaterialCommunityIcons
-              name="gas-station-outline"
-              size={24}
-              color={focused ? Colors.primary : Colors.textMuted}
-            />
-          ),
+          tabBarIcon: iconCombustivel,
         }}
       />
       <Tabs.Screen
@@ -58,7 +75,7 @@ export default function TabsLayout() {
         options={{
           title: 'Relatórios',
           tabBarLabel: 'Relatórios',
-          tabBarIcon: ({ focused }) => icon(focused, 'stats-chart', 'stats-chart-outline'),
+          tabBarIcon: iconRelatorios,
         }}
       />
       <Tabs.Screen
@@ -66,7 +83,7 @@ export default function TabsLayout() {
         options={{
           title: 'Registros',
           tabBarLabel: 'Registros',
-          tabBarIcon: ({ focused }) => icon(focused, 'list', 'list-outline'),
+          tabBarIcon: iconRegistros,
         }}
       />
       <Tabs.Screen

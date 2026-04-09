@@ -1,7 +1,6 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Image, Animated } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import { api } from '../../services/api';
 import { tratarErro } from '../../utils/tratarErro';
@@ -118,11 +117,13 @@ export default function HomeScreen() {
         {/* Resumo do dia */}
         <View style={[styles.card]}>
           <Text style={styles.cardTitle}>Resumo do dia:</Text>
-          {loading ? (
+          {loading && (
             <ActivityIndicator color={Colors.primary} size="large" style={{ marginTop: 8 }} />
-          ) : semCorridas ? (
+          )}
+          {!loading && semCorridas && (
             <Text style={styles.vazio}>Bora trabalhar hoje!</Text>
-          ) : (
+          )}
+          {!loading && !semCorridas && (
             <View style={styles.resumoLinhas}>
               <View style={styles.resumoLinha}>
                 <Text style={styles.resumoLabel}>Total de corridas:</Text>

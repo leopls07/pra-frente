@@ -22,7 +22,10 @@ app.use((req, res, next) => {
   res.on('finish', () => {
     const ms = Date.now() - start;
     const status = res.statusCode;
-    const color = status >= 500 ? '🔴' : status >= 400 ? '🟡' : '🟢';
+    let color: string;
+    if (status >= 500) color = '🔴';
+    else if (status >= 400) color = '🟡';
+    else color = '🟢';
     console.log(`${color} ${req.method} ${req.path} → ${status} (${ms}ms)`);
     if (req.body && Object.keys(req.body).length > 0) {
       const sanitized = { ...req.body };

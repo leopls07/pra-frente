@@ -17,7 +17,7 @@ api.interceptors.request.use(async (config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-  const body = config.data ? JSON.parse(JSON.stringify(config.data)) : undefined;
+  const body = config.data ? structuredClone(config.data) : undefined;
   if (body?.password) body.password = '***';
   console.log(`[API] ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`, body ?? '');
   return config;
@@ -29,15 +29,15 @@ api.interceptors.response.use(
     return response;
   },
   async (error) => {
-    if (!error.response) {
-      console.log(`[API] ❌ sem resposta — baseURL: ${error.config?.baseURL}, url: ${error.config?.url}, msg: ${error.message}`);
-    } else {
+    if (error.response) {
       console.log(`[API] ⚠️ ${error.response.status} ${error.config?.url}`, error.response.data);
       if (error.response.status === 401) {
         useAuthStore.getState().logout();
       }
+    } else {
+      console.log(`[API] ❌ sem resposta — baseURL: ${error.config?.baseURL}, url: ${error.config?.url}, msg: ${error.message}`);
     }
 
-    return Promise.reject(error);
+    throw error;
   }
 );
