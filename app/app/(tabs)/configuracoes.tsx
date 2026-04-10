@@ -7,6 +7,8 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -76,7 +78,11 @@ export default function ConfiguracoesScreen() {
 
   return (
     <LinearGradient colors={[Colors.primary, Colors.background]} style={styles.gradient}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+      <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.headerArea}>
           <TouchableOpacity
             onPress={() => router.back()}
@@ -198,6 +204,7 @@ export default function ConfiguracoesScreen() {
           </View>
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </LinearGradient>
   );
 }

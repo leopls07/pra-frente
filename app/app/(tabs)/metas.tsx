@@ -166,7 +166,7 @@ export default function MetasScreen() {
     <LinearGradient colors={[Colors.primary, Colors.background]} style={styles.gradient}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View style={styles.headerArea}>

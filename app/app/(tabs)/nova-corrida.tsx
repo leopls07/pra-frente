@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ScrollView,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
@@ -121,7 +122,11 @@ export default function NovaCorrida() {
 
   return (
     <LinearGradient colors={[Colors.primary, Colors.background]} style={styles.gradient}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+      <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.headerArea}>
           <Text style={styles.titulo}>Nova Corrida</Text>
         </View>
@@ -229,6 +234,7 @@ export default function NovaCorrida() {
       </TouchableOpacity>
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </LinearGradient>
   );
 }
@@ -236,7 +242,7 @@ export default function NovaCorrida() {
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
   container: { flex: 1 },
-  content: { flexGrow: 1 },
+  content: { flexGrow: 1, paddingBottom: 40 },
   headerArea: {
     paddingTop: 56,
     paddingHorizontal: 24,
