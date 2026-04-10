@@ -9,12 +9,12 @@ router.use(authMiddleware);
 const abastecimentoSchema = z.object({
   valor: z.number().positive().max(99999.99, 'Valor máximo é R$ 99.999,99.'),
   tipoCombustivel: z.enum(['gasolina', 'etanol']),
-  data: z.iso.datetime(),
+  data: z.iso.datetime({ offset: true }),
 });
 
 const querySchema = z.object({
-  inicio: z.iso.datetime().optional(),
-  fim: z.iso.datetime().optional(),
+  inicio: z.iso.datetime({ offset: true }).optional(),
+  fim: z.iso.datetime({ offset: true }).optional(),
   page: z.string().regex(/^\d+$/).optional(),
   limit: z.string().regex(/^\d+$/).optional(),
 });

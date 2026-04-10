@@ -7,14 +7,18 @@ const JWT_KEY = 'pra_frente_jwt';
 interface AuthState {
   usuario: Usuario | null;
   isLoaded: boolean;
+  sessionExpiredMessage: string | null;
   initialize: () => Promise<void>;
   setUsuario: (usuario: Usuario, jwt: string) => Promise<void>;
   logout: () => Promise<void>;
+  logoutSessionExpired: () => Promise<void>;
+  clearSessionExpiredMessage: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
   usuario: null,
   isLoaded: false,
+  sessionExpiredMessage: null,
 
   initialize: async () => {
     const jwt = await SecureStore.getItemAsync(JWT_KEY);
@@ -39,5 +43,14 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: async () => {
     await SecureStore.deleteItemAsync(JWT_KEY);
     set({ usuario: null });
+  },
+
+  logoutSessionExpired: async () => {
+    await SecureStore.deleteItemAsync(JWT_KEY);
+    set({ usuario: null, sessionExpiredMessage: 'Sua sessão expirou. Faça login novamente.' });
+  },
+
+  clearSessionExpiredMessage: () => {
+    set({ sessionExpiredMessage: null });
   },
 }));

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import Toast from 'react-native-toast-message';
 import { api } from '../../services/api';
 import { tratarErro } from '../../utils/tratarErro';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -113,8 +114,15 @@ function tratarErroLogin(
 }
 
 export default function LoginScreen() {
-  const { setUsuario } = useAuthStore();
+  const { setUsuario, sessionExpiredMessage, clearSessionExpiredMessage } = useAuthStore();
   const router = useRouter();
+
+  useEffect(() => {
+    if (sessionExpiredMessage) {
+      Toast.show({ type: 'error', text1: sessionExpiredMessage, visibilityTime: 4000 });
+      clearSessionExpiredMessage();
+    }
+  }, []);
 
   const [modo, setModo] = useState<Modo>('login');
   const [nome, setNome] = useState('');

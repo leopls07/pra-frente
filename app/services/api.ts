@@ -32,7 +32,12 @@ api.interceptors.response.use(
     if (error.response) {
       console.log(`[API] ⚠️ ${error.response.status} ${error.config?.url}`, error.response.data);
       if (error.response.status === 401) {
-        useAuthStore.getState().logout();
+        const { usuario, logoutSessionExpired, logout } = useAuthStore.getState();
+        if (usuario) {
+          await logoutSessionExpired();
+        } else {
+          await logout();
+        }
       }
     } else {
       console.log(`[API] ❌ sem resposta — baseURL: ${error.config?.baseURL}, url: ${error.config?.url}, msg: ${error.message}`);

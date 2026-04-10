@@ -10,8 +10,8 @@ const router = Router();
 router.use(authMiddleware);
 
 const detalhadoQuerySchema = z.object({
-  inicio: z.iso.datetime().optional(),
-  fim: z.iso.datetime().optional(),
+  inicio: z.iso.datetime({ offset: true }).optional(),
+  fim: z.iso.datetime({ offset: true }).optional(),
   periodo: z.enum(['hoje', 'semana', 'mes']).optional(),
 });
 

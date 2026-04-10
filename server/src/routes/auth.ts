@@ -170,7 +170,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
     const jwtToken = jwt.sign(
       { id: user._id.toString(), email: user.email, name: user.name },
       process.env.JWT_SECRET as string,
-      { expiresIn: '360h' }
+      { expiresIn: '720h' }
     );
 
     res.json({ jwt: jwtToken, user: { email: user.email, name: user.name } });
