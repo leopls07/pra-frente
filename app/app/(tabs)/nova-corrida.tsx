@@ -21,12 +21,18 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 type FormaPagamento = 'pix' | 'dinheiro' | 'cartao';
+type Aplicativo = 'uber' | '99taxi';
 type McIcon = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
 const FORMAS: { valor: FormaPagamento; label: string; icone: McIcon }[] = [
   { valor: 'pix', label: 'Pix', icone: 'qrcode' },
   { valor: 'dinheiro', label: 'Dinheiro', icone: 'cash' },
   { valor: 'cartao', label: 'Cartão', icone: 'credit-card-outline' },
+];
+
+const APLICATIVOS: { valor: Aplicativo; label: string; icone: McIcon }[] = [
+  { valor: 'uber', label: 'Uber', icone: 'car' },
+  { valor: '99taxi', label: '99Taxi', icone: 'taxi' },
 ];
 
 function formatarDataHora(date: Date): string {
@@ -43,6 +49,7 @@ export default function NovaCorrida() {
   const router = useRouter();
   const [valor, setValor] = useState('');
   const [formaPagamento, setFormaPagamento] = useState<FormaPagamento>('pix');
+  const [aplicativo, setAplicativo] = useState<Aplicativo | undefined>(undefined);
   const [data, setData] = useState(new Date());
   const [observacao, setObservacao] = useState('');
   const [salvando, setSalvando] = useState(false);
@@ -53,6 +60,7 @@ export default function NovaCorrida() {
     useCallback(() => {
       setValor('');
       setFormaPagamento('pix');
+      setAplicativo(undefined);
       setData(new Date());
       setObservacao('');
       setShowPicker(false);
@@ -105,6 +113,7 @@ export default function NovaCorrida() {
       await api.post('/corridas', {
         valor: Number(valor) / 100,
         formaPagamento,
+        aplicativo: aplicativo || undefined,
         data: toISOComOffsetBRT(data),
         observacao: observacao.trim() || undefined,
       });
@@ -173,6 +182,40 @@ export default function NovaCorrida() {
                 ]}
               >
                 {forma.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.grupo}>
+        <Text style={styles.label}>Aplicativo (opcional)</Text>
+        <View style={styles.formasPagamento}>
+          {APLICATIVOS.map((app) => (
+            <TouchableOpacity
+              key={app.valor}
+              style={[
+                styles.botaoForma,
+                aplicativo === app.valor && styles.botaoFormaSelecionado,
+              ]}
+              onPress={() => setAplicativo(aplicativo === app.valor ? undefined : app.valor)}
+              activeOpacity={0.7}
+              accessibilityLabel={`Aplicativo ${app.label}`}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: aplicativo === app.valor }}
+            >
+              <MaterialCommunityIcons
+                name={app.icone}
+                size={26}
+                color={aplicativo === app.valor ? Colors.primary : Colors.textSecondary}
+              />
+              <Text
+                style={[
+                  styles.formaLabel,
+                  aplicativo === app.valor && styles.formaLabelSelecionada,
+                ]}
+              >
+                {app.label}
               </Text>
             </TouchableOpacity>
           ))}

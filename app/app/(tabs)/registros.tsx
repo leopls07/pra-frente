@@ -28,6 +28,7 @@ import {
   Abastecimento,
   FormaPagamento,
   TipoCombustivel,
+  Aplicativo,
   PaginadoResposta,
 } from '../../types';
 
@@ -45,6 +46,11 @@ const FORMAS_PAG: { valor: FormaPagamento; label: string; icone: McIcon }[] = [
 const COMBUSTIVEIS: { valor: TipoCombustivel; label: string; icone: McIcon }[] = [
   { valor: 'gasolina', label: 'Gasolina', icone: 'fire' },
   { valor: 'etanol', label: 'Etanol', icone: 'leaf' },
+];
+
+const APLICATIVOS: { valor: Aplicativo; label: string; icone: McIcon }[] = [
+  { valor: 'uber', label: 'Uber', icone: 'car' },
+  { valor: '99taxi', label: '99Taxi', icone: 'taxi' },
 ];
 
 const LIMITE = 20;
@@ -255,6 +261,11 @@ function ItemCard({ item, onPress }: ItemCardProps) {
         <View style={styles.itemMeta}>
           <MaterialCommunityIcons name={icone} size={14} color={Colors.textSecondary} />
           <Text style={styles.itemMetaTexto}>{label}</Text>
+          {corrida && item.aplicativo ? (
+            <Text style={styles.itemMetaTexto}>
+              · {APLICATIVOS.find((a) => a.valor === item.aplicativo)?.label ?? item.aplicativo}
+            </Text>
+          ) : null}
         </View>
       </View>
       <View style={styles.itemDireita}>
@@ -297,6 +308,7 @@ interface IniciarEdicaoSetters {
   setEditFormaPagamento: (v: FormaPagamento) => void;
   setEditObservacao: (v: string) => void;
   setEditTipoCombustivel: (v: TipoCombustivel) => void;
+  setEditAplicativo: (v: Aplicativo | undefined) => void;
   setModoEdicao: (v: boolean) => void;
 }
 
@@ -309,8 +321,10 @@ function iniciarEdicao(
   if (isCorrida(itemSelecionado)) {
     setters.setEditFormaPagamento(itemSelecionado.formaPagamento);
     setters.setEditObservacao(itemSelecionado.observacao ?? '');
+    setters.setEditAplicativo(itemSelecionado.aplicativo);
   } else {
     setters.setEditTipoCombustivel(itemSelecionado.tipoCombustivel);
+    setters.setEditAplicativo(undefined);
   }
   setters.setModoEdicao(true);
 }
@@ -320,6 +334,7 @@ interface SalvarEdicaoParams {
   editValor: string;
   editFormaPagamento: FormaPagamento;
   editTipoCombustivel: TipoCombustivel;
+  editAplicativo: Aplicativo | undefined;
   editData: Date;
   editObservacao: string;
   aba: Aba;
@@ -332,7 +347,7 @@ interface SalvarEdicaoParams {
 async function salvarEdicao(params: SalvarEdicaoParams): Promise<void> {
   const {
     itemSelecionado, editValor, editFormaPagamento, editTipoCombustivel,
-    editData, editObservacao, aba, setSalvandoEdicao, setRegistrosHoje,
+    editAplicativo, editData, editObservacao, aba, setSalvandoEdicao, setRegistrosHoje,
     setRegistros, fecharModal,
   } = params;
 
@@ -352,6 +367,7 @@ async function salvarEdicao(params: SalvarEdicaoParams): Promise<void> {
 
   if (isCorrida(itemSelecionado)) {
     body.formaPagamento = editFormaPagamento;
+    body.aplicativo = editAplicativo || undefined;
     body.observacao = editObservacao.trim() || undefined;
   } else {
     body.tipoCombustivel = editTipoCombustivel;
@@ -502,6 +518,7 @@ export default function RegistrosScreen() {
   const [editValor, setEditValor] = useState('');
   const [editFormaPagamento, setEditFormaPagamento] = useState<FormaPagamento>('pix');
   const [editTipoCombustivel, setEditTipoCombustivel] = useState<TipoCombustivel>('gasolina');
+  const [editAplicativo, setEditAplicativo] = useState<Aplicativo | undefined>(undefined);
   const [editData, setEditData] = useState(new Date());
   const [editObservacao, setEditObservacao] = useState('');
   const [salvandoEdicao, setSalvandoEdicao] = useState(false);
@@ -778,6 +795,21 @@ export default function RegistrosScreen() {
                             </Text>
                           </View>
                         </View>
+                        {itemSelecionado.aplicativo ? (
+                          <View style={styles.detalheRow}>
+                            <Text style={styles.detalheLabel}>Aplicativo</Text>
+                            <View style={styles.detalheIconRow}>
+                              <MaterialCommunityIcons
+                                name={APLICATIVOS.find((a) => a.valor === itemSelecionado.aplicativo)?.icone ?? 'car'}
+                                size={18}
+                                color={Colors.text}
+                              />
+                              <Text style={styles.detalheValorTexto}>
+                                {APLICATIVOS.find((a) => a.valor === itemSelecionado.aplicativo)?.label ?? itemSelecionado.aplicativo}
+                              </Text>
+                            </View>
+                          </View>
+                        ) : null}
                         {itemSelecionado.observacao ? (
                           <View style={styles.detalheRow}>
                             <Text style={styles.detalheLabel}>Observação</Text>
@@ -810,7 +842,7 @@ export default function RegistrosScreen() {
                     <View style={styles.modalAcoes}>
                       <TouchableOpacity
                         style={styles.btnEditar}
-                        onPress={() => itemSelecionado && iniciarEdicao(itemSelecionado, { setEditData, setEditValor, setEditFormaPagamento, setEditObservacao, setEditTipoCombustivel, setModoEdicao })}
+                        onPress={() => itemSelecionado && iniciarEdicao(itemSelecionado, { setEditData, setEditValor, setEditFormaPagamento, setEditObservacao, setEditTipoCombustivel, setEditAplicativo, setModoEdicao })}
                         activeOpacity={0.8}
                       >
                         <Ionicons name="create-outline" size={20} color={Colors.text} />
@@ -955,6 +987,34 @@ export default function RegistrosScreen() {
 
                     {isCorrida(itemSelecionado) && (
                       <View style={styles.grupo}>
+                        <Text style={styles.label}>Aplicativo (opcional)</Text>
+                        <View style={styles.opcoes}>
+                          {APLICATIVOS.map((app) => (
+                            <TouchableOpacity
+                              key={app.valor}
+                              style={[
+                                styles.opcaoBtn,
+                                editAplicativo === app.valor && styles.opcaoBtnAtivo,
+                              ]}
+                              onPress={() => setEditAplicativo(editAplicativo === app.valor ? undefined : app.valor)}
+                              activeOpacity={0.7}
+                            >
+                              <MaterialCommunityIcons
+                                name={app.icone}
+                                size={22}
+                                color={editAplicativo === app.valor ? Colors.primary : Colors.textSecondary}
+                              />
+                              <Text style={[styles.opcaoTexto, editAplicativo === app.valor && styles.opcaoTextoAtivo]}>
+                                {app.label}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      </View>
+                    )}
+
+                    {isCorrida(itemSelecionado) && (
+                      <View style={styles.grupo}>
                         <Text style={styles.label}>Observação (opcional)</Text>
                         <TextInput
                           style={styles.inputObs}
@@ -972,7 +1032,7 @@ export default function RegistrosScreen() {
 
                     <TouchableOpacity
                       style={[styles.btnSalvar, salvandoEdicao && styles.btnDesabilitado]}
-                      onPress={() => itemSelecionado && salvarEdicao({ itemSelecionado, editValor, editFormaPagamento, editTipoCombustivel, editData, editObservacao, aba: abaRef.current, setSalvandoEdicao, setRegistrosHoje, setRegistros, fecharModal })}
+                      onPress={() => itemSelecionado && salvarEdicao({ itemSelecionado, editValor, editFormaPagamento, editTipoCombustivel, editAplicativo, editData, editObservacao, aba: abaRef.current, setSalvandoEdicao, setRegistrosHoje, setRegistros, fecharModal })}
                       disabled={salvandoEdicao}
                       activeOpacity={0.8}
                       accessibilityRole="button"

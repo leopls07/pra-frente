@@ -5,6 +5,7 @@ export interface ICorrida extends Document {
   userEmail: string;
   valor: number;
   formaPagamento: 'pix' | 'dinheiro' | 'cartao';
+  aplicativo?: 'uber' | '99taxi';
   data: Date;
   observacao?: string;
 }
@@ -17,6 +18,10 @@ const CorridaSchema = new Schema<ICorrida>({
     type: String,
     required: true,
     enum: ['pix', 'dinheiro', 'cartao'],
+  },
+  aplicativo: {
+    type: String,
+    enum: ['uber', '99taxi'],
   },
   data: { type: Date, required: true, default: Date.now },
   observacao: { type: String, trim: true },

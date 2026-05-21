@@ -1,5 +1,6 @@
 export type TipoCombustivel = 'gasolina' | 'etanol';
 export type FormaPagamento = 'pix' | 'dinheiro' | 'cartao';
+export type Aplicativo = 'uber' | '99taxi';
 
 export interface Usuario {
   email: string;
@@ -12,6 +13,7 @@ export interface Corrida {
   userEmail: string;
   valor: number;
   formaPagamento: FormaPagamento;
+  aplicativo?: Aplicativo;
   data: string;
   observacao?: string;
 }
