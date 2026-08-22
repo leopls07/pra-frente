@@ -18,6 +18,16 @@ function iconCombustivel({ focused }: Readonly<{ focused: boolean }>) {
   );
 }
 
+function iconGastos({ focused }: Readonly<{ focused: boolean }>) {
+  return (
+    <MaterialCommunityIcons
+      name="cash-multiple"
+      size={24}
+      color={focused ? Colors.primary : Colors.textMuted}
+    />
+  );
+}
+
 function iconInicio({ focused }: Readonly<{ focused: boolean }>) {
   return icon(focused, 'home', 'home-outline');
 }
@@ -26,9 +36,6 @@ function iconCorrida({ focused }: Readonly<{ focused: boolean }>) {
 }
 function iconRelatorios({ focused }: Readonly<{ focused: boolean }>) {
   return icon(focused, 'stats-chart', 'stats-chart-outline');
-}
-function iconRegistros({ focused }: Readonly<{ focused: boolean }>) {
-  return icon(focused, 'list', 'list-outline');
 }
 
 export default function TabsLayout() {
@@ -71,6 +78,14 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="outros-gastos"
+        options={{
+          title: 'Gastos',
+          tabBarLabel: 'Gastos',
+          tabBarIcon: iconGastos,
+        }}
+      />
+      <Tabs.Screen
         name="relatorios"
         options={{
           title: 'Relatórios',
@@ -80,11 +95,7 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="registros"
-        options={{
-          title: 'Registros',
-          tabBarLabel: 'Registros',
-          tabBarIcon: iconRegistros,
-        }}
+        options={{ href: null }}
       />
       <Tabs.Screen
         name="configuracoes"

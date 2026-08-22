@@ -1,3 +1,5 @@
 .claude/
 instructions/
 .vscode/
+.vercel
+.env*

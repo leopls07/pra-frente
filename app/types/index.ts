@@ -27,6 +27,18 @@ export interface Abastecimento {
   data: string;
 }
 
+export type CategoriaGasto = 'alimentacao' | 'manutencao' | 'caixinha' | 'outros';
+
+export interface Gasto {
+  _id: string;
+  userId: string;
+  userEmail: string;
+  valor: number;
+  categoria: CategoriaGasto;
+  descricao?: string;
+  data: string;
+}
+
 export interface PaginadoResposta<T> {
   items: T[];
   total: number;

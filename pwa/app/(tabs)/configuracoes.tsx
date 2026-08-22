@@ -8,10 +8,13 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Toast from 'react-native-toast-message';
+import * as Clipboard from 'expo-clipboard';
+import QRCode from 'react-native-qrcode-svg';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { api } from '../../services/api';
@@ -20,6 +23,10 @@ import { confirmar } from '../../utils/confirmar';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Colors } from '../../constants/colors';
 import { PasswordInput } from '../../components/ui/PasswordInput';
+import { gerarPayloadPix } from '../../utils/pix';
+import { PIX_APOIO } from '../../constants/pix';
+
+const PAYLOAD_PIX = gerarPayloadPix(PIX_APOIO);
 
 export default function ConfiguracoesScreen() {
   const router = useRouter();
@@ -30,6 +37,12 @@ export default function ConfiguracoesScreen() {
   const [novaSenha, setNovaSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
   const [salvando, setSalvando] = useState(false);
+  const [apoiarVisivel, setApoiarVisivel] = useState(false);
+
+  const copiarChave = async () => {
+    await Clipboard.setStringAsync(PIX_APOIO.chave);
+    Toast.show({ type: 'success', text1: 'Chave Pix copiada!', position: 'bottom' });
+  };
 
   const limparFormSenha = () => {
     setSenhaAtual('');
@@ -205,6 +218,20 @@ export default function ConfiguracoesScreen() {
           <View style={styles.secao}>
             <TouchableOpacity
               style={styles.opcao}
+              onPress={() => setApoiarVisivel(true)}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Apoiar o desenvolvedor"
+            >
+              <View style={styles.opcaoEsquerda}>
+                <Ionicons name="heart-outline" size={22} color={Colors.primary} />
+                <Text style={styles.opcaoTexto}>Apoiar o desenvolvedor</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={Colors.textSecondary} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.opcao}
               onPress={handleSair}
               activeOpacity={0.7}
               accessibilityRole="button"
@@ -219,6 +246,64 @@ export default function ConfiguracoesScreen() {
         </View>
       </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Modal Apoiar */}
+      <Modal
+        visible={apoiarVisivel}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setApoiarVisivel(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalFundo}
+            activeOpacity={1}
+            onPress={() => setApoiarVisivel(false)}
+          />
+          <View style={styles.modalContainer}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.modalScrollContent}>
+              <View style={styles.modalHeader}>
+                <View style={{ width: 24 }} />
+                <Text style={styles.modalTitulo}>Apoiar o desenvolvedor</Text>
+                <TouchableOpacity onPress={() => setApoiarVisivel(false)} hitSlop={8}>
+                  <Ionicons name="close" size={24} color={Colors.text} />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.modalBody}>
+                <Ionicons name="heart" size={40} color={Colors.cost} style={{ alignSelf: 'center' }} />
+
+                <Text style={styles.apoiarTexto}>
+                  Pra usar é de graça mas para manter de pé não!
+                </Text>
+                <Text style={styles.apoiarTexto}>
+                  Apoie o desenvolvedor com o que puder, a caixinha é do coração
+                </Text>
+
+                <View style={styles.qrContainer}>
+                  <QRCode value={PAYLOAD_PIX} size={220} backgroundColor={Colors.card} color={Colors.text} />
+                </View>
+
+                <Text style={styles.chavePixLabel}>Chave Pix</Text>
+                <Text style={styles.chavePixTexto} selectable>
+                  {PIX_APOIO.chave}
+                </Text>
+
+                <TouchableOpacity
+                  style={styles.botaoCopiar}
+                  onPress={copiarChave}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Copiar chave Pix"
+                >
+                  <Ionicons name="copy-outline" size={20} color={Colors.text} />
+                  <Text style={styles.botaoCopiarTexto}>Copiar chave Pix</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </LinearGradient>
   );
 }
@@ -296,4 +381,83 @@ const styles = StyleSheet.create({
   },
   botaoDesabilitado: { opacity: 0.6 },
   botaoSalvarTexto: { color: Colors.text, fontSize: 17, fontWeight: 'bold' },
+
+  // Modal Apoiar
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  modalFundo: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  modalContainer: {
+    backgroundColor: Colors.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '90%',
+    paddingTop: 6,
+  },
+  modalScrollContent: {
+    paddingBottom: 40,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  modalTitulo: { fontSize: 18, fontWeight: '700', color: Colors.text },
+  modalBody: {
+    padding: 20,
+    gap: 16,
+    alignItems: 'center',
+  },
+  apoiarTexto: {
+    fontSize: 16,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  qrContainer: {
+    padding: 16,
+    backgroundColor: Colors.card,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    marginTop: 4,
+  },
+  chavePixLabel: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginTop: 4,
+  },
+  chavePixTexto: {
+    fontSize: 16,
+    color: Colors.text,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  botaoCopiar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: Colors.card,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    minHeight: 52,
+    marginTop: 4,
+    alignSelf: 'stretch',
+  },
+  botaoCopiarTexto: { fontSize: 16, fontWeight: '700', color: Colors.text },
 });

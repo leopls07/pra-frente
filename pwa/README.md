@@ -184,20 +184,24 @@ layout e visível em qualquer tela:
 
 `public/service-worker.js` implementa:
 
-- **Cache-first com atualização em segundo plano** para os assets do app shell (JS,
-  CSS, imagens, fontes — tudo servido da mesma origem que o Metro/`expo export` gera).
+- **Navegação (HTML) → network-first**, com fallback pro cache só se a rede falhar
+  (offline). Garante que cada carregamento real de página pegue a versão publicada mais
+  recente — importante porque o `expo export -p web` gera um `.html` por rota que é
+  sobrescrito a cada deploy na mesma URL.
+- **Assets com nome hasheado (JS/CSS/fontes em `/_expo/static/...`, `/assets/...`) →
+  cache-first** com atualização em segundo plano. Seguro porque são imutáveis (o nome
+  muda se o conteúdo mudar), então nunca ficam desatualizados nem impedem o app de abrir
+  rápido/offline.
 - **Network-only** para qualquer requisição para outra origem (a API em
   `EXPO_PUBLIC_API_URL`, ex.: Railway) — nunca cacheamos dados financeiros do usuário.
 
 Registrado em `app/_layout.tsx` via `navigator.serviceWorker.register('/service-worker.js')`,
 guardado por `Platform.OS === 'web'`.
 
-**Nota**: a estratégia é cache-first para o app shell (mesma origem), com atualização em
-segundo plano. Isso significa que, depois de um novo deploy, um usuário que já tinha o
-site aberto/instalado antes pode continuar vendo a versão em cache por um carregamento
-a mais, até a atualização em segundo plano terminar e a próxima visita pegar a versão
-nova. Normal, não é bug — só não espere ver uma mudança "instantaneamente" sem recarregar
-de novo.
+`CACHE_NAME` é versionado manualmente (`pra-frente-shell-v2`) — o `activate` handler já
+limpa qualquer cache com nome diferente do atual, então basta incrementar esse número
+se um dia for necessário forçar a invalidação total do cache de assets em dispositivos
+que já tinham a PWA aberta/instalada antes.
 
 ## Verificação já feita nesta implementação
 

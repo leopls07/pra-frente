@@ -115,6 +115,25 @@ export default function ConfiguracoesScreen() {
             </TouchableOpacity>
           </View>
 
+          {/* Seção Histórico */}
+          <Text style={[styles.secaoTitulo, { marginTop: 24 }]}>Histórico</Text>
+
+          <View style={styles.secao}>
+            <TouchableOpacity
+              style={styles.opcao}
+              onPress={() => router.push('/(tabs)/registros')}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel="Ver registros"
+            >
+              <View style={styles.opcaoEsquerda}>
+                <Ionicons name="list-outline" size={22} color={Colors.text} />
+                <Text style={styles.opcaoTexto}>Ver registros</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={Colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
           {/* Seção Segurança */}
           <Text style={[styles.secaoTitulo, { marginTop: 24 }]}>Segurança</Text>
 
