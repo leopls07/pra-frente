@@ -1,5 +1,6 @@
 import { View, StyleSheet } from 'react-native';
 import { Colors } from '../../constants/colors';
+import { fonts } from '../../constants/typography';
 
 export type DateTimeFieldMode = 'date' | 'date+time';
 
@@ -95,7 +96,7 @@ const inputStyle: React.CSSProperties = {
   border: `2px solid ${Colors.border}`,
   fontSize: 16,
   color: Colors.text,
-  fontFamily: 'inherit',
+  fontFamily: fonts.regular,
   minHeight: 52,
   flex: 1,
   minWidth: 0,

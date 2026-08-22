@@ -21,6 +21,12 @@ export default function Root({ children }: PropsWithChildren) {
           content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
         />
         <meta name="theme-color" content="#E4AF00" />
+        {/*
+          Força os controles nativos do navegador (inputs de data/hora, scrollbars,
+          etc.) a usarem o esquema de cores claro, mesmo em dispositivos com tema
+          escuro ativado no sistema — o app usa um design claro fixo, não adaptável.
+        */}
+        <meta name="color-scheme" content="light" />
         <meta name="description" content="Pra Frente — controle de ganhos e gastos para motoristas de aplicativo." />
 
         {/* PWA manifest */}
@@ -52,6 +58,6 @@ export default function Root({ children }: PropsWithChildren) {
 }
 
 const responsiveBackground = `
-  html, body { background-color: #FFFFFF; height: 100%; }
+  html, body { background-color: #FFFFFF; height: 100%; color-scheme: light; }
   #root { display: flex; height: 100%; flex: 1; }
 `;
