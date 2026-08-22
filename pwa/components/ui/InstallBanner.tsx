@@ -1,5 +1,6 @@
 import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/colors';
 import { useInstallPrompt } from '../../hooks/useInstallPrompt';
 
@@ -13,12 +14,13 @@ import { useInstallPrompt } from '../../hooks/useInstallPrompt';
  */
 export function InstallBanner() {
   const { canShowAndroidBanner, canShowIOSBanner, promptInstall, dismiss } = useInstallPrompt();
+  const insets = useSafeAreaInsets();
 
   if (Platform.OS !== 'web') return null;
   if (!canShowAndroidBanner && !canShowIOSBanner) return null;
 
   return (
-    <View style={styles.container} pointerEvents="box-none">
+    <View style={[styles.container, { bottom: 76 + insets.bottom }]} pointerEvents="box-none">
       <View style={styles.card}>
         <MaterialCommunityIcons name="cellphone-arrow-down" size={26} color={Colors.primary} />
         <View style={styles.textArea}>
@@ -53,7 +55,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 76,
     paddingHorizontal: 12,
     zIndex: 1000,
   },

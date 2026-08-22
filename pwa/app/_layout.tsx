@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import { Text, Platform } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import * as SplashScreen from 'expo-splash-screen';
@@ -13,11 +15,36 @@ import {
 import { Ionicons, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuthStore } from '../store/useAuthStore';
 import { fonts } from '../constants/typography';
+import { Colors } from '../constants/colors';
 import { InstallBanner } from '../components/ui/InstallBanner';
 import { UpdateBanner } from '../components/ui/UpdateBanner';
 import { avisarUpdateDisponivel } from '../hooks/useAppUpdate';
 
 SplashScreen.preventAutoHideAsync();
+
+/**
+ * Por padrão, o expo-router detecta o tema do sistema (claro/escuro) sozinho
+ * e monta um `ThemeProvider` (do @react-navigation/native) correspondente —
+ * é esse tema, não o CSS do app, que define o fundo padrão das telas/navegação
+ * quando não coberto explicitamente pelos nossos próprios estilos. Em
+ * aparelhos com dark mode do sistema ativado (relatado em um Samsung com
+ * Samsung Internet), isso deixava áreas escurecidas mesmo com todo o design
+ * do app sendo fixo em tema claro. Fornecer nosso próprio `ThemeProvider`
+ * aqui sobrescreve essa detecção automática.
+ */
+const TEMA_CLARO_FORCADO = {
+  ...DefaultTheme,
+  dark: false,
+  colors: {
+    ...DefaultTheme.colors,
+    primary: Colors.primary,
+    background: Colors.background,
+    card: Colors.card,
+    text: Colors.text,
+    border: Colors.border,
+    notification: Colors.cost,
+  },
+};
 
 // Aplica Inter como fonte padrão em todos os componentes Text
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -88,11 +115,13 @@ export default function RootLayout() {
   if (!fontsLoaded || !isLoaded) return null;
 
   return (
-    <>
-      <Stack screenOptions={{ headerShown: false }} />
-      <InstallBanner />
-      <UpdateBanner />
-      <Toast />
-    </>
+    <SafeAreaProvider>
+      <ThemeProvider value={TEMA_CLARO_FORCADO}>
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.background } }} />
+        <InstallBanner />
+        <UpdateBanner />
+        <Toast />
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }
