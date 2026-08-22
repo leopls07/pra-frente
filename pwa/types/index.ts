@@ -1,0 +1,46 @@
+export type TipoCombustivel = 'gasolina' | 'etanol';
+export type FormaPagamento = 'pix' | 'dinheiro' | 'cartao';
+export type Aplicativo = 'uber' | '99taxi';
+
+export interface Usuario {
+  email: string;
+  name: string;
+}
+
+export interface Corrida {
+  _id: string;
+  userId: string;
+  userEmail: string;
+  valor: number;
+  formaPagamento: FormaPagamento;
+  aplicativo?: Aplicativo;
+  data: string;
+  observacao?: string;
+}
+
+export interface Abastecimento {
+  _id: string;
+  userId: string;
+  userEmail: string;
+  valor: number;
+  tipoCombustivel: TipoCombustivel;
+  data: string;
+}
+
+export interface PaginadoResposta<T> {
+  items: T[];
+  total: number;
+  page: number;
+  pages: number;
+}
+
+export interface Meta {
+  _id: string;
+  userId: string;
+  metaDiaria: number;
+  diasTrabalhoSemana: number;
+  metaSemanal: number;
+  metaMensal: number;
+  metaSemanalEditada: boolean;
+  metaMensalEditada: boolean;
+}

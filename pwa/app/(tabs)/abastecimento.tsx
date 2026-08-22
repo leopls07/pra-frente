@@ -1,0 +1,237 @@
+import { useState, useCallback } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+} from 'react-native';
+import { DateTimeField } from '../../components/ui/DateTimeField';
+import { useFocusEffect } from 'expo-router';
+import * as Haptics from 'expo-haptics';
+import Toast from 'react-native-toast-message';
+import { api } from '../../services/api';
+import { tratarErro } from '../../utils/tratarErro';
+import { toISOComOffsetBRT } from '../../utils/dataBRT';
+import { TipoCombustivel } from '../../types';
+import { Colors } from '../../constants/colors';
+import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+
+type McIcon = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
+
+const COMBUSTIVEIS: { valor: TipoCombustivel; label: string; icone: McIcon }[] = [
+  { valor: 'gasolina', label: 'Gasolina', icone: 'fire' },
+  { valor: 'etanol', label: 'Etanol', icone: 'leaf' },
+];
+
+export default function AbastecimentoScreen() {
+  const [valor, setValor] = useState('');
+  const [tipoCombustivel, setTipoCombustivel] = useState<TipoCombustivel>('gasolina');
+  const [data, setData] = useState(new Date());
+  const [salvando, setSalvando] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      setValor('');
+      setTipoCombustivel('gasolina');
+      setData(new Date());
+    }, [])
+  );
+
+  const handleValorChange = (text: string) => {
+    setValor(text.replaceAll(/\D/g, ''));
+  };
+
+  const valorFormatado = valor
+    ? (Number(valor) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+    : '';
+
+  const handleRegistrar = async () => {
+    if (!valor || Number(valor) === 0) {
+      Toast.show({ type: 'error', text1: 'Informe o valor do abastecimento.', position: 'bottom' });
+      return;
+    }
+
+    try {
+      setSalvando(true);
+      await api.post('/abastecimentos', {
+        valor: Number(valor) / 100,
+        tipoCombustivel,
+        data: toISOComOffsetBRT(data),
+      });
+
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Toast.show({ type: 'success', text1: 'Abastecimento registrado!', position: 'bottom' });
+
+      setValor('');
+      setTipoCombustivel('gasolina');
+      setData(new Date());
+    } catch (error: unknown) {
+      Toast.show({ type: 'error', text1: tratarErro(error), position: 'bottom' });
+    } finally {
+      setSalvando(false);
+    }
+  };
+
+  return (
+    <LinearGradient colors={[Colors.primary, Colors.background]} style={styles.gradient}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        <View style={styles.headerArea}>
+          <Text style={styles.titulo}>Abastecimento</Text>
+        </View>
+
+        <View style={styles.form}>
+      <View style={styles.grupo}>
+        <Text style={styles.label}>Valor pago</Text>
+        <TextInput
+          style={styles.inputValor}
+          value={valorFormatado}
+          onChangeText={handleValorChange}
+          keyboardType="numeric"
+          placeholder="R$ 0,00"
+          placeholderTextColor={Colors.textMuted}
+          accessibilityLabel="Valor do abastecimento em reais"
+        />
+      </View>
+
+      <View style={styles.grupo}>
+        <Text style={styles.label}>Tipo de combustível</Text>
+        <View style={styles.grid}>
+          {COMBUSTIVEIS.map((c) => (
+            <TouchableOpacity
+              key={c.valor}
+              style={[
+                styles.botaoCombustivel,
+                tipoCombustivel === c.valor && styles.botaoCombustivelSelecionado,
+              ]}
+              onPress={() => setTipoCombustivel(c.valor)}
+              activeOpacity={0.7}
+              accessibilityLabel={c.label}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: tipoCombustivel === c.valor }}
+            >
+              <MaterialCommunityIcons
+                name={c.icone}
+                size={26}
+                color={tipoCombustivel === c.valor ? Colors.primary : Colors.textSecondary}
+              />
+              <Text
+                style={[
+                  styles.combustivelLabel,
+                  tipoCombustivel === c.valor && styles.combustivelLabelSelecionado,
+                ]}
+              >
+                {c.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      <View style={styles.grupo}>
+        <Text style={styles.label}>Data e hora</Text>
+        <DateTimeField
+          value={data}
+          onChange={setData}
+          mode="date+time"
+          maximumDate={new Date()}
+          accessibilityLabel="Data do abastecimento"
+        />
+      </View>
+
+      <TouchableOpacity
+        style={[styles.botaoRegistrar, salvando && styles.botaoDesabilitado]}
+        onPress={handleRegistrar}
+        disabled={salvando}
+        activeOpacity={0.8}
+        accessibilityLabel="Registrar abastecimento"
+        accessibilityRole="button"
+        accessibilityState={{ disabled: salvando }}
+      >
+        <Text style={styles.botaoTexto}>
+          {salvando ? 'Registrando...' : 'Registrar Abastecimento'}
+        </Text>
+      </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </LinearGradient>
+  );
+}
+
+const styles = StyleSheet.create({
+  gradient: { flex: 1 },
+  container: { flex: 1 },
+  content: { flexGrow: 1 },
+  headerArea: {
+    paddingTop: 56,
+    paddingHorizontal: 24,
+    paddingBottom: 24,
+  },
+  form: {
+    padding: 20,
+    gap: 24,
+    backgroundColor: Colors.card,
+    borderRadius: 16,
+    width: '95%',
+    alignSelf: 'center',
+    flex: 1,
+    marginBottom: 16,
+  },
+  titulo: { fontSize: 28, fontWeight: 'bold', color: Colors.text },
+  grupo: { gap: 8 },
+  label: { fontSize: 16, fontWeight: '600', color: Colors.label },
+  inputValor: {
+    backgroundColor: Colors.card,
+    borderRadius: 12,
+    padding: 20,
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: Colors.cost,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    fontVariant: ['tabular-nums'],
+  },
+  grid: { flexDirection: 'row', gap: 12 },
+  botaoCombustivel: {
+    flex: 1,
+    backgroundColor: Colors.card,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: Colors.border,
+    gap: 4,
+    minHeight: 72,
+    justifyContent: 'center',
+  },
+  botaoCombustivelSelecionado: { borderColor: Colors.primary, backgroundColor: Colors.selectedBg },
+
+  combustivelLabel: { fontSize: 15, fontWeight: '600', color: Colors.textSecondary },
+  combustivelLabelSelecionado: { color: Colors.primary },
+  inputData: {
+    backgroundColor: Colors.card,
+    borderRadius: 12,
+    padding: 18,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    minHeight: 60,
+  },
+  inputDataTexto: { fontSize: 18, color: Colors.text, fontWeight: '500' },
+  inputDataIcone: { fontSize: 20 },
+  botaoRegistrar: {
+    backgroundColor: Colors.btnAcao,
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    marginTop: 8,
+    minHeight: 64,
+    justifyContent: 'center',
+  },
+  botaoDesabilitado: { opacity: 0.6 },
+  botaoTexto: { color: Colors.text, fontSize: 20, fontWeight: 'bold' },
+});

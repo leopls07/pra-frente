@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "Pra Frente",
+    "slug": "pra-frente-pwa",
+    "scheme": "prafrentepwa",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/logo_prafrente.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "output": "static",
+      "bundler": "metro",
+      "themeColor": "#E4AF00",
+      "backgroundColor": "#FFFFFF",
+      "name": "Pra Frente"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font"
+    ],
+    "extra": {
+      "router": {}
+    }
+  }
+}
