@@ -281,7 +281,7 @@ export default function ConfiguracoesScreen() {
                 <Ionicons name="heart" size={40} color={Colors.cost} style={{ alignSelf: 'center' }} />
 
                 <Text style={styles.apoiarTexto}>
-                  Pra usar é de graça mas para manter de pé não!
+                  Pra usar é de graça mas para manter funcionando não!
                 </Text>
                 <Text style={styles.apoiarTexto}>
                   Apoie o desenvolvedor com o que puder, a caixinha é do coração
