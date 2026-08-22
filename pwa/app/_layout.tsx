@@ -14,6 +14,8 @@ import { Ionicons, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-ic
 import { useAuthStore } from '../store/useAuthStore';
 import { fonts } from '../constants/typography';
 import { InstallBanner } from '../components/ui/InstallBanner';
+import { UpdateBanner } from '../components/ui/UpdateBanner';
+import { avisarUpdateDisponivel } from '../hooks/useAppUpdate';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -26,6 +28,20 @@ TextAny.defaultProps.style = [TextAny.defaultProps.style, { fontFamily: fonts.re
 function registrarServiceWorker() {
   if (Platform.OS !== 'web') return;
   if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+
+  // Se já existia um service worker controlando a página antes deste registro,
+  // qualquer troca de controller depois disso é uma atualização de verdade (o
+  // novo SW já assumiu via skipWaiting + clients.claim). Na primeiríssima
+  // instalação (sem controller ainda), a primeira troca não conta como update.
+  const jaTinhaControllerAntes = !!navigator.serviceWorker.controller;
+  let avisou = false;
+
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!jaTinhaControllerAntes || avisou) return;
+    avisou = true;
+    avisarUpdateDisponivel();
+  });
+
   navigator.serviceWorker.register('/service-worker.js').catch((err) => {
     console.log('[PWA] Falha ao registrar service worker:', err);
   });
@@ -75,6 +91,7 @@ export default function RootLayout() {
     <>
       <Stack screenOptions={{ headerShown: false }} />
       <InstallBanner />
+      <UpdateBanner />
       <Toast />
     </>
   );
