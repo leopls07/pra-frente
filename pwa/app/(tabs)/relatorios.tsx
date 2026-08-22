@@ -19,6 +19,7 @@ type Periodo = 'hoje' | 'semana' | 'mes';
 interface PeriodoResumo {
   ganho_bruto: number;
   total_abastecimento: number;
+  total_gastos: number;
   lucro_liquido: number;
   total_corridas: number;
 }
@@ -32,6 +33,7 @@ interface ResumoGeral {
 interface RelatorioDetalhado {
   ganho_bruto: number;
   total_abastecimento: number;
+  total_gastos: number;
   lucro_liquido: number;
   total_corridas: number;
   dias_trabalhados: number;
@@ -97,6 +99,7 @@ function textoCompartilharRelatorio(titulo: string, detalhe: RelatorioDetalhado)
     `📊 ${titulo}\n\n` +
     `💰 Ganho bruto: ${fmt(detalhe.ganho_bruto)}\n` +
     `⛽ Abastecimentos: ${fmt(detalhe.total_abastecimento)}\n` +
+    `🧾 Outros gastos: ${fmt(detalhe.total_gastos)}\n` +
     `✅ Lucro líquido: ${fmt(detalhe.lucro_liquido)}\n\n` +
     `🚕 Corridas: ${detalhe.total_corridas}\n` +
     `📅 Dias trabalhados: ${detalhe.dias_trabalhados}\n` +
@@ -242,6 +245,7 @@ export default function RelatoriosScreen() {
               <View style={styles.linhas}>
                 <Linha label="Ganho bruto" valor={fmt(detalhe.ganho_bruto)} cor={Colors.gain} />
                 <Linha label="Abastecimentos" valor={fmt(detalhe.total_abastecimento)} cor={Colors.cost} />
+                <Linha label="Outros gastos" valor={fmt(detalhe.total_gastos)} cor={Colors.cost} />
                 <Linha label="Lucro líquido" valor={fmt(detalhe.lucro_liquido)} cor={Colors.gain} destaque />
                 <Linha label="Total de corridas" valor={String(detalhe.total_corridas)} />
                 {periodoSelecionado !== 'hoje' && (
@@ -306,6 +310,7 @@ export default function RelatoriosScreen() {
                 <View style={styles.linhas}>
                   <Linha label="Ganho bruto" valor={fmt(relatorioAnual.ganho_bruto)} cor={Colors.gain} />
                   <Linha label="Abastecimentos" valor={fmt(relatorioAnual.total_abastecimento)} cor={Colors.cost} />
+                  <Linha label="Outros gastos" valor={fmt(relatorioAnual.total_gastos)} cor={Colors.cost} />
                   <Linha label="Lucro líquido" valor={fmt(relatorioAnual.lucro_liquido)} cor={Colors.gain} destaque />
                   <Linha label="Total de corridas" valor={String(relatorioAnual.total_corridas)} />
                   <Linha label="Dias trabalhados" valor={String(relatorioAnual.dias_trabalhados)} />

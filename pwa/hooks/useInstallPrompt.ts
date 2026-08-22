@@ -67,6 +67,9 @@ export function useInstallPrompt() {
   }, []);
 
   return {
+    isStandalone,
+    isIOS,
+    canPromptInstall: !!deferredPrompt,
     canShowAndroidBanner: !!deferredPrompt && !isStandalone && !dismissed,
     canShowIOSBanner: isIOS && !isStandalone && !dismissed,
     promptInstall,

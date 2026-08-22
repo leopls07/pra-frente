@@ -38,10 +38,17 @@ export default function ConfiguracoesScreen() {
   const [confirmarSenha, setConfirmarSenha] = useState('');
   const [salvando, setSalvando] = useState(false);
   const [apoiarVisivel, setApoiarVisivel] = useState(false);
+  const [chaveCopiada, setChaveCopiada] = useState(false);
 
   const copiarChave = async () => {
-    await Clipboard.setStringAsync(PIX_APOIO.chave);
-    Toast.show({ type: 'success', text1: 'Chave Pix copiada!', position: 'bottom' });
+    try {
+      await Clipboard.setStringAsync(PIX_APOIO.chave);
+      setChaveCopiada(true);
+      Toast.show({ type: 'success', text1: 'Chave Pix copiada!', position: 'bottom' });
+      setTimeout(() => setChaveCopiada(false), 2500);
+    } catch {
+      Toast.show({ type: 'error', text1: 'Não foi possível copiar. Copie manualmente.', position: 'bottom' });
+    }
   };
 
   const limparFormSenha = () => {
@@ -290,14 +297,20 @@ export default function ConfiguracoesScreen() {
                 </Text>
 
                 <TouchableOpacity
-                  style={styles.botaoCopiar}
+                  style={[styles.botaoCopiar, chaveCopiada && styles.botaoCopiarAtivo]}
                   onPress={copiarChave}
                   activeOpacity={0.8}
                   accessibilityRole="button"
                   accessibilityLabel="Copiar chave Pix"
                 >
-                  <Ionicons name="copy-outline" size={20} color={Colors.text} />
-                  <Text style={styles.botaoCopiarTexto}>Copiar chave Pix</Text>
+                  <Ionicons
+                    name={chaveCopiada ? 'checkmark' : 'copy-outline'}
+                    size={20}
+                    color={chaveCopiada ? Colors.gain : Colors.text}
+                  />
+                  <Text style={[styles.botaoCopiarTexto, chaveCopiada && styles.botaoCopiarTextoAtivo]}>
+                    {chaveCopiada ? 'Copiado!' : 'Copiar chave Pix'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
@@ -459,5 +472,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     alignSelf: 'stretch',
   },
+  botaoCopiarAtivo: { borderColor: Colors.gain, backgroundColor: '#F0FBF4' },
   botaoCopiarTexto: { fontSize: 16, fontWeight: '700', color: Colors.text },
+  botaoCopiarTextoAtivo: { color: Colors.gain },
 });

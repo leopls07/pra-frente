@@ -19,6 +19,7 @@ import { tratarErro } from '../../utils/tratarErro';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Colors } from '../../constants/colors';
 import { PasswordInput } from '../../components/ui/PasswordInput';
+import { InstallCardFixo } from '../../components/ui/InstallCardFixo';
 
 type Modo = 'login' | 'cadastro';
 
@@ -233,6 +234,8 @@ export default function LoginScreen() {
           style={modo === 'login' ? styles.logo : styles.logoMenor}
           resizeMode="contain"
         />
+
+        <InstallCardFixo />
 
         <View style={styles.toggle}>
           <TouchableOpacity

@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { z } from 'zod';
 import { Corrida } from '../models/Corrida';
 import { Abastecimento } from '../models/Abastecimento';
+import { Gasto } from '../models/Gasto';
 import { Meta } from '../models/Meta';
 import { authMiddleware, AuthRequest } from '../middleware/auth';
 import { rangeParaPeriodoBRT, dataISOBRT } from '../utils/dataBRT';
@@ -22,16 +23,19 @@ router.get('/resumo', async (req: AuthRequest, res: Response): Promise<void> => 
     const resultados = await Promise.all(
       periodos.map(async (p) => {
         const { inicio, fim } = rangeParaPeriodoBRT(p);
-        const [corridas, abastecimentos] = await Promise.all([
+        const [corridas, abastecimentos, gastos] = await Promise.all([
           Corrida.find({ userId: req.user!.id, data: { $gte: inicio, $lte: fim } }),
           Abastecimento.find({ userId: req.user!.id, data: { $gte: inicio, $lte: fim } }),
+          Gasto.find({ userId: req.user!.id, data: { $gte: inicio, $lte: fim } }),
         ]);
         const ganho_bruto = corridas.reduce((acc, c) => acc + c.valor, 0);
         const total_abastecimento = abastecimentos.reduce((acc, a) => acc + a.valor, 0);
+        const total_gastos = gastos.reduce((acc, g) => acc + g.valor, 0);
         return {
           ganho_bruto,
           total_abastecimento,
-          lucro_liquido: ganho_bruto - total_abastecimento,
+          total_gastos,
+          lucro_liquido: ganho_bruto - total_abastecimento - total_gastos,
           total_corridas: corridas.length,
         };
       })
@@ -67,15 +71,17 @@ router.get('/detalhado', async (req: AuthRequest, res: Response): Promise<void> 
       ({ inicio, fim } = rangeParaPeriodoBRT(periodo ?? 'mes'));
     }
 
-    const [corridas, abastecimentos, meta] = await Promise.all([
+    const [corridas, abastecimentos, gastos, meta] = await Promise.all([
       Corrida.find({ userEmail: req.user!.email, data: { $gte: inicio, $lte: fim } }),
       Abastecimento.find({ userEmail: req.user!.email, data: { $gte: inicio, $lte: fim } }),
+      Gasto.find({ userEmail: req.user!.email, data: { $gte: inicio, $lte: fim } }),
       Meta.findOne({ userId: req.user!.id }),
     ]);
 
     const ganho_bruto = corridas.reduce((acc, c) => acc + c.valor, 0);
     const total_abastecimento = abastecimentos.reduce((acc, a) => acc + a.valor, 0);
-    const lucro_liquido = ganho_bruto - total_abastecimento;
+    const total_gastos = gastos.reduce((acc, g) => acc + g.valor, 0);
+    const lucro_liquido = ganho_bruto - total_abastecimento - total_gastos;
     const total_corridas = corridas.length;
 
     const porDia = new Map<string, number>();
@@ -107,6 +113,7 @@ router.get('/detalhado', async (req: AuthRequest, res: Response): Promise<void> 
     res.json({
       ganho_bruto,
       total_abastecimento,
+      total_gastos,
       lucro_liquido,
       total_corridas,
       dias_trabalhados,
