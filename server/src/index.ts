@@ -9,6 +9,7 @@ import corridasRoutes from './routes/corridas';
 import abastecimentosRoutes from './routes/abastecimentos';
 import relatoriosRoutes from './routes/relatorios';
 import metasRoutes from './routes/metas';
+import gastosRoutes from './routes/gastos';
 
 const app = express();
 const PORT = process.env.PORT ?? 3000;
@@ -42,6 +43,7 @@ app.use('/corridas', corridasRoutes);
 app.use('/abastecimentos', abastecimentosRoutes);
 app.use('/relatorios', relatoriosRoutes);
 app.use('/metas', metasRoutes);
+app.use('/gastos', gastosRoutes);
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
