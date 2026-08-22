@@ -26,15 +26,17 @@ import { Colors } from '../../constants/colors';
 import {
   Corrida,
   Abastecimento,
+  Gasto,
   FormaPagamento,
   TipoCombustivel,
+  CategoriaGasto,
   Aplicativo,
   PaginadoResposta,
 } from '../../types';
 
 type Aba = 'hoje' | 'historico';
-type TipoRegistro = 'corridas' | 'abastecimentos';
-type Registro = Corrida | Abastecimento;
+type TipoRegistro = 'corridas' | 'abastecimentos' | 'gastos';
+type Registro = Corrida | Abastecimento | Gasto;
 type McIcon = React.ComponentProps<typeof MaterialCommunityIcons>['name'];
 
 const FORMAS_PAG: { valor: FormaPagamento; label: string; icone: McIcon }[] = [
@@ -48,10 +50,35 @@ const COMBUSTIVEIS: { valor: TipoCombustivel; label: string; icone: McIcon }[] =
   { valor: 'etanol', label: 'Etanol', icone: 'leaf' },
 ];
 
+const CATEGORIAS_GASTO: { valor: CategoriaGasto; label: string; icone: McIcon }[] = [
+  { valor: 'alimentacao', label: 'Alimentação', icone: 'food' },
+  { valor: 'manutencao', label: 'Manutenção', icone: 'wrench' },
+  { valor: 'caixinha', label: 'Caixinha', icone: 'piggy-bank-outline' },
+  { valor: 'outros', label: 'Outros', icone: 'dots-horizontal-circle-outline' },
+];
+
 const APLICATIVOS: { valor: Aplicativo; label: string; icone: McIcon }[] = [
   { valor: 'uber', label: 'Uber', icone: 'car' },
   { valor: '99taxi', label: '99Taxi', icone: 'taxi' },
 ];
+
+const TIPO_ENDPOINT: Record<TipoRegistro, string> = {
+  corridas: '/corridas',
+  abastecimentos: '/abastecimentos',
+  gastos: '/gastos',
+};
+
+const TIPO_ICONE: Record<TipoRegistro, McIcon> = {
+  corridas: 'car',
+  abastecimentos: 'gas-station',
+  gastos: 'cash-multiple',
+};
+
+const TIPO_LABEL: Record<TipoRegistro, string> = {
+  corridas: 'Corridas',
+  abastecimentos: 'Combustível',
+  gastos: 'Gastos',
+};
 
 const LIMITE = 20;
 
@@ -119,6 +146,10 @@ function isCorrida(item: Registro): item is Corrida {
   return 'formaPagamento' in item;
 }
 
+function isGasto(item: Registro): item is Gasto {
+  return 'categoria' in item;
+}
+
 // ── Module-level helpers ──────────────────────────────────────────────────
 
 function getTituloModal(
@@ -127,6 +158,7 @@ function getTituloModal(
 ): string {
   if (modoEdicao) return 'Editar registro';
   if (item && isCorrida(item)) return 'Corrida';
+  if (item && isGasto(item)) return 'Gasto';
   return 'Abastecimento';
 }
 
@@ -138,7 +170,7 @@ async function fetchHoje(
   setCarregandoHoje(true);
   try {
     const { inicio, fim } = rangeHoje();
-    const endpoint = t === 'corridas' ? '/corridas' : '/abastecimentos';
+    const endpoint = TIPO_ENDPOINT[t];
     const { data } = await api.get<(Registro)[]>(endpoint, {
       params: { inicio, fim },
     });
@@ -160,7 +192,7 @@ async function fetchHistorico(
   if (pagNum === 1) setCarregando(true);
   else setCarregandoMais(true);
   try {
-    const endpoint = t === 'corridas' ? '/corridas' : '/abastecimentos';
+    const endpoint = TIPO_ENDPOINT[t];
     if (fd) {
       const { inicio, fim } = rangeData(fd);
       const { data } = await api.get<(Registro)[]>(endpoint, {
@@ -191,28 +223,29 @@ function EmptyHoje({ tipo }: EmptyHojeProps) {
   const msg =
     tipo === 'corridas'
       ? 'Você não registrou nenhuma corrida hoje.'
-      : 'Você não abasteceu hoje.';
+      : tipo === 'abastecimentos'
+      ? 'Você não abasteceu hoje.'
+      : 'Você não registrou nenhum gasto hoje.';
+  const icone: McIcon =
+    tipo === 'corridas' ? 'car-outline' : tipo === 'abastecimentos' ? 'gas-station-outline' : 'cash-multiple';
   return (
     <View style={styles.vazioContainer}>
-      <MaterialCommunityIcons
-        name={tipo === 'corridas' ? 'car-outline' : 'gas-station-outline'}
-        size={48}
-        color={Colors.textMuted}
-      />
+      <MaterialCommunityIcons name={icone} size={48} color={Colors.textMuted} />
       <Text style={styles.vazioTexto}>{msg}</Text>
     </View>
   );
 }
 
-type EmptyHistoricoProps = Readonly<{ filtroData: Date | null }>;
-function EmptyHistorico({ filtroData }: EmptyHistoricoProps) {
+type EmptyHistoricoProps = Readonly<{ filtroData: Date | null; tipo: TipoRegistro }>;
+function EmptyHistorico({ filtroData, tipo }: EmptyHistoricoProps) {
+  const substantivo = tipo === 'corridas' ? 'corrida' : tipo === 'abastecimentos' ? 'abastecimento' : 'gasto';
   return (
     <View style={styles.vazioContainer}>
       <MaterialCommunityIcons name="clipboard-text-off-outline" size={48} color={Colors.textMuted} />
       <Text style={styles.vazioTexto}>
         {filtroData
           ? `Nenhum registro em ${formatarDataBtn(filtroData)}.`
-          : 'Nenhum registro encontrado.'}
+          : `Nenhum ${substantivo} encontrado.`}
       </Text>
     </View>
   );
@@ -221,10 +254,16 @@ function EmptyHistorico({ filtroData }: EmptyHistoricoProps) {
 type ItemCardProps = Readonly<{ item: Registro; onPress: (item: Registro) => void }>;
 function ItemCard({ item, onPress }: ItemCardProps) {
   const corrida = isCorrida(item);
+  const gasto = isGasto(item);
   const forma = corrida ? FORMAS_PAG.find((f) => f.valor === item.formaPagamento) : null;
-  const combust = corrida ? null : COMBUSTIVEIS.find((c) => c.valor === item.tipoCombustivel);
-  const icone: McIcon = corrida ? (forma?.icone ?? 'cash') : (combust?.icone ?? 'fire');
-  const label = corrida ? (forma?.label ?? '') : (combust?.label ?? '');
+  const categoriaInfo = gasto ? CATEGORIAS_GASTO.find((c) => c.valor === item.categoria) : null;
+  const combust = !corrida && !gasto ? COMBUSTIVEIS.find((c) => c.valor === item.tipoCombustivel) : null;
+  const icone: McIcon = corrida
+    ? (forma?.icone ?? 'cash')
+    : gasto
+    ? (categoriaInfo?.icone ?? 'cash-multiple')
+    : (combust?.icone ?? 'fire');
+  const label = corrida ? (forma?.label ?? '') : gasto ? (categoriaInfo?.label ?? '') : (combust?.label ?? '');
 
   return (
     <TouchableOpacity style={styles.itemCard} onPress={() => onPress(item)} activeOpacity={0.7}>
@@ -281,6 +320,7 @@ interface IniciarEdicaoSetters {
   setEditFormaPagamento: (v: FormaPagamento) => void;
   setEditObservacao: (v: string) => void;
   setEditTipoCombustivel: (v: TipoCombustivel) => void;
+  setEditCategoriaGasto: (v: CategoriaGasto) => void;
   setEditAplicativo: (v: Aplicativo | undefined) => void;
   setModoEdicao: (v: boolean) => void;
 }
@@ -295,6 +335,10 @@ function iniciarEdicao(
     setters.setEditFormaPagamento(itemSelecionado.formaPagamento);
     setters.setEditObservacao(itemSelecionado.observacao ?? '');
     setters.setEditAplicativo(itemSelecionado.aplicativo);
+  } else if (isGasto(itemSelecionado)) {
+    setters.setEditCategoriaGasto(itemSelecionado.categoria);
+    setters.setEditObservacao(itemSelecionado.descricao ?? '');
+    setters.setEditAplicativo(undefined);
   } else {
     setters.setEditTipoCombustivel(itemSelecionado.tipoCombustivel);
     setters.setEditAplicativo(undefined);
@@ -307,6 +351,7 @@ interface SalvarEdicaoParams {
   editValor: string;
   editFormaPagamento: FormaPagamento;
   editTipoCombustivel: TipoCombustivel;
+  editCategoriaGasto: CategoriaGasto;
   editAplicativo: Aplicativo | undefined;
   editData: Date;
   editObservacao: string;
@@ -319,7 +364,7 @@ interface SalvarEdicaoParams {
 
 async function salvarEdicao(params: SalvarEdicaoParams): Promise<void> {
   const {
-    itemSelecionado, editValor, editFormaPagamento, editTipoCombustivel,
+    itemSelecionado, editValor, editFormaPagamento, editTipoCombustivel, editCategoriaGasto,
     editAplicativo, editData, editObservacao, aba, setSalvandoEdicao, setRegistrosHoje,
     setRegistros, fecharModal,
   } = params;
@@ -331,6 +376,8 @@ async function salvarEdicao(params: SalvarEdicaoParams): Promise<void> {
 
   const endpoint = isCorrida(itemSelecionado)
     ? `/corridas/${itemSelecionado._id}`
+    : isGasto(itemSelecionado)
+    ? `/gastos/${itemSelecionado._id}`
     : `/abastecimentos/${itemSelecionado._id}`;
 
   const body: Record<string, unknown> = {
@@ -342,6 +389,9 @@ async function salvarEdicao(params: SalvarEdicaoParams): Promise<void> {
     body.formaPagamento = editFormaPagamento;
     body.aplicativo = editAplicativo || undefined;
     body.observacao = editObservacao.trim() || undefined;
+  } else if (isGasto(itemSelecionado)) {
+    body.categoria = editCategoriaGasto;
+    body.descricao = editObservacao.trim() || undefined;
   } else {
     body.tipoCombustivel = editTipoCombustivel;
   }
@@ -371,6 +421,8 @@ async function executarExclusao(
   if (!itemSelecionado) return;
   const endpoint = isCorrida(itemSelecionado)
     ? `/corridas/${itemSelecionado._id}`
+    : isGasto(itemSelecionado)
+    ? `/gastos/${itemSelecionado._id}`
     : `/abastecimentos/${itemSelecionado._id}`;
   setExcluindo(true);
   try {
@@ -472,6 +524,7 @@ export default function RegistrosScreen() {
   const [editValor, setEditValor] = useState('');
   const [editFormaPagamento, setEditFormaPagamento] = useState<FormaPagamento>('pix');
   const [editTipoCombustivel, setEditTipoCombustivel] = useState<TipoCombustivel>('gasolina');
+  const [editCategoriaGasto, setEditCategoriaGasto] = useState<CategoriaGasto>('alimentacao');
   const [editAplicativo, setEditAplicativo] = useState<Aplicativo | undefined>(undefined);
   const [editData, setEditData] = useState(new Date());
   const [editObservacao, setEditObservacao] = useState('');
@@ -577,9 +630,9 @@ export default function RegistrosScreen() {
           ))}
         </View>
 
-        {/* Toggle Corridas / Abastecimentos */}
+        {/* Toggle Corridas / Combustível / Gastos */}
         <View style={styles.toggleContainer}>
-          {(['corridas', 'abastecimentos'] as TipoRegistro[]).map((t) => (
+          {(['corridas', 'abastecimentos', 'gastos'] as TipoRegistro[]).map((t) => (
             <TouchableOpacity
               key={t}
               style={[styles.toggleBtn, tipo === t && styles.toggleBtnAtivo]}
@@ -587,12 +640,12 @@ export default function RegistrosScreen() {
               activeOpacity={0.7}
             >
               <MaterialCommunityIcons
-                name={t === 'corridas' ? 'car' : 'gas-station'}
+                name={TIPO_ICONE[t]}
                 size={18}
                 color={tipo === t ? Colors.primary : Colors.textSecondary}
               />
               <Text style={[styles.toggleTexto, tipo === t && styles.toggleTextoAtivo]}>
-                {t === 'corridas' ? 'Corridas' : 'Abastecimentos'}
+                {TIPO_LABEL[t]}
               </Text>
             </TouchableOpacity>
           ))}
@@ -639,7 +692,7 @@ export default function RegistrosScreen() {
             data={listaAtiva}
             keyExtractor={(item) => item._id}
             renderItem={({ item }) => <ItemCard item={item} onPress={abrirItem} />}
-            ListEmptyComponent={aba === 'hoje' ? <EmptyHoje tipo={tipo} /> : <EmptyHistorico filtroData={filtroData} />}
+            ListEmptyComponent={aba === 'hoje' ? <EmptyHoje tipo={tipo} /> : <EmptyHistorico filtroData={filtroData} tipo={tipo} />}
             contentContainerStyle={styles.listaContent}
             showsVerticalScrollIndicator={false}
             ListFooterComponent={
@@ -754,6 +807,34 @@ export default function RegistrosScreen() {
                           </View>
                         ) : null}
                       </>
+                    ) : isGasto(itemSelecionado) ? (
+                      <>
+                        <View style={styles.detalheRow}>
+                          <Text style={styles.detalheLabel}>Categoria</Text>
+                          <View style={styles.detalheIconRow}>
+                            <MaterialCommunityIcons
+                              name={
+                                CATEGORIAS_GASTO.find((c) => c.valor === itemSelecionado.categoria)
+                                  ?.icone ?? 'cash-multiple'
+                              }
+                              size={18}
+                              color={Colors.text}
+                            />
+                            <Text style={styles.detalheValorTexto}>
+                              {CATEGORIAS_GASTO.find((c) => c.valor === itemSelecionado.categoria)
+                                ?.label}
+                            </Text>
+                          </View>
+                        </View>
+                        {itemSelecionado.descricao ? (
+                          <View style={styles.detalheRow}>
+                            <Text style={styles.detalheLabel}>Descrição</Text>
+                            <Text style={styles.detalheValorTexto}>
+                              {itemSelecionado.descricao}
+                            </Text>
+                          </View>
+                        ) : null}
+                      </>
                     ) : (
                       <View style={styles.detalheRow}>
                         <Text style={styles.detalheLabel}>Combustível</Text>
@@ -777,7 +858,7 @@ export default function RegistrosScreen() {
                     <View style={styles.modalAcoes}>
                       <TouchableOpacity
                         style={styles.btnEditar}
-                        onPress={() => itemSelecionado && iniciarEdicao(itemSelecionado, { setEditData, setEditValor, setEditFormaPagamento, setEditObservacao, setEditTipoCombustivel, setEditAplicativo, setModoEdicao })}
+                        onPress={() => itemSelecionado && iniciarEdicao(itemSelecionado, { setEditData, setEditValor, setEditFormaPagamento, setEditObservacao, setEditTipoCombustivel, setEditCategoriaGasto, setEditAplicativo, setModoEdicao })}
                         activeOpacity={0.8}
                       >
                         <Ionicons name="create-outline" size={20} color={Colors.text} />
@@ -849,6 +930,41 @@ export default function RegistrosScreen() {
                                 ]}
                               >
                                 {f.label}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      </View>
+                    ) : isGasto(itemSelecionado) ? (
+                      <View style={styles.grupo}>
+                        <Text style={styles.label}>Categoria</Text>
+                        <View style={styles.opcoes}>
+                          {CATEGORIAS_GASTO.map((c) => (
+                            <TouchableOpacity
+                              key={c.valor}
+                              style={[
+                                styles.opcaoBtn,
+                                editCategoriaGasto === c.valor && styles.opcaoBtnAtivo,
+                              ]}
+                              onPress={() => setEditCategoriaGasto(c.valor)}
+                              activeOpacity={0.7}
+                            >
+                              <MaterialCommunityIcons
+                                name={c.icone}
+                                size={22}
+                                color={
+                                  editCategoriaGasto === c.valor
+                                    ? Colors.primary
+                                    : Colors.textSecondary
+                                }
+                              />
+                              <Text
+                                style={[
+                                  styles.opcaoTexto,
+                                  editCategoriaGasto === c.valor && styles.opcaoTextoAtivo,
+                                ]}
+                              >
+                                {c.label}
                               </Text>
                             </TouchableOpacity>
                           ))}
@@ -947,9 +1063,26 @@ export default function RegistrosScreen() {
                       </View>
                     )}
 
+                    {isGasto(itemSelecionado) && (
+                      <View style={styles.grupo}>
+                        <Text style={styles.label}>Descrição (opcional)</Text>
+                        <TextInput
+                          style={styles.inputObs}
+                          value={editObservacao}
+                          onChangeText={setEditObservacao}
+                          placeholder="Ex: troca de óleo"
+                          placeholderTextColor={Colors.textMuted}
+                          multiline
+                          numberOfLines={3}
+                          maxLength={200}
+                          accessibilityLabel="Descrição do gasto"
+                        />
+                      </View>
+                    )}
+
                     <TouchableOpacity
                       style={[styles.btnSalvar, salvandoEdicao && styles.btnDesabilitado]}
-                      onPress={() => itemSelecionado && salvarEdicao({ itemSelecionado, editValor, editFormaPagamento, editTipoCombustivel, editAplicativo, editData, editObservacao, aba: abaRef.current, setSalvandoEdicao, setRegistrosHoje, setRegistros, fecharModal })}
+                      onPress={() => itemSelecionado && salvarEdicao({ itemSelecionado, editValor, editFormaPagamento, editTipoCombustivel, editCategoriaGasto, editAplicativo, editData, editObservacao, aba: abaRef.current, setSalvandoEdicao, setRegistrosHoje, setRegistros, fecharModal })}
                       disabled={salvandoEdicao}
                       activeOpacity={0.8}
                       accessibilityRole="button"
